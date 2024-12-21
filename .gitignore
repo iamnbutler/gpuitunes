@@ -1,0 +1,32 @@
+**/*.rs.bk
+Cargo.lock
+
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.DS_store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Rust build artifacts
+debug/
+release/
+target/
+
+# Dependency directories
+vendor/
+
+# Generated files
+*.pdb

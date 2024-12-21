@@ -115,7 +115,7 @@ impl TitleBar {
             .overflow_hidden()
             .p_px()
             // C5C5C5, BEBEBE, B8B6B7, AFAFAF, A7A7A7, 9F9DA0, 969696
-            .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
+            .bg(gpui::linear_gradient(180., from, to))
             .shadow(smallvec![BoxShadow {
                 color: hsla(0.0, 1., 1., 0.36),
                 offset: point(px(0.), px(1.)),

@@ -18,6 +18,7 @@ Important note: `gpui` is still currently a part of [Zed](https://github.com/zed
 ## gpui TODOs:
 
 - [ ] Add radial gradient to gpui
+- [ ] Add multi-stop gradients (see if linear_gradient can just take a vec of ColorStop?)
 - [ ] BoxShadow can't have a blur radius of 0
 - [ ] We don't seem to render divs with no children
 

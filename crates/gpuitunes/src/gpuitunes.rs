@@ -38,8 +38,8 @@ impl Spacer {
         self
     }
 
-    fn grow(mut self, grow: bool) -> Self {
-        self.grow = grow;
+    fn grow(mut self) -> Self {
+        self.grow = true;
         self
     }
 }
@@ -65,7 +65,7 @@ fn circle(size: impl Into<DefiniteLength>) -> Div {
     div().size(size.into()).flex_none().rounded_full()
 }
 
-fn linear_gradient(start: impl Into<Hsla>, stop: impl Into<Hsla>) -> Background {
+fn vertical_linear_gradient(start: impl Into<Hsla>, stop: impl Into<Hsla>) -> Background {
     let start = linear_color_stop(start, 0.0);
     let end = linear_color_stop(stop, 1.0);
 
@@ -75,25 +75,35 @@ fn linear_gradient(start: impl Into<Hsla>, stop: impl Into<Hsla>) -> Background 
 struct TitleBar {}
 
 impl Render for TitleBar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
         let traffic_lights_width = px(62.);
 
         v_stack()
-            .debug_below()
             .h(px(64.))
             .w_full()
-            .bg(linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
             .border_b_1()
             .border_color(rgb(0x414141))
             .child(
                 h_stack()
                     .id("title-bar")
                     .h(px(20.))
+                    .flex_none()
                     .w_full()
                     .justify_between()
                     .child(self.render_traffic_lights(traffic_lights_width))
                     .child(div().child("gpuItunes"))
                     .child(spacer().width(traffic_lights_width)),
+            )
+            .child(
+                h_stack()
+                    .h(px(44.))
+                    .flex_grow()
+                    .w_full()
+                    .child(spacer().width(px(27.)))
+                    .child(self.render_playback_buttons())
+                    .child(self.render_volume_controls())
+                    .child(spacer().grow()),
             )
     }
 }
@@ -104,7 +114,8 @@ impl TitleBar {
             .rounded_full()
             .overflow_hidden()
             .p_px()
-            .bg(linear_gradient(rgb(0x101010), rgb(0x95999C)))
+            // C5C5C5, BEBEBE, B8B6B7, AFAFAF, A7A7A7, 9F9DA0, 969696
+            .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
             .shadow(smallvec![BoxShadow {
                 color: hsla(0.0, 1., 1., 0.36),
                 offset: point(px(0.), px(1.)),
@@ -115,7 +126,7 @@ impl TitleBar {
                 circle(px(10.))
                     .overflow_hidden()
                     .relative()
-                    .bg(linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
+                    .bg(vertical_linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
                     .child(
                         div()
                             .top_px()
@@ -125,7 +136,7 @@ impl TitleBar {
                             .w(px(4.))
                             .h(px(3.))
                             .rounded_t_full()
-                            .bg(linear_gradient(rgb(0xFFFFFF), rgb(0x9EA3A9))),
+                            .bg(vertical_linear_gradient(rgb(0xFFFFFF), rgb(0x9EA3A9))),
                     ),
             )
     }
@@ -143,8 +154,37 @@ impl TitleBar {
             .child(self.render_traffic_light())
     }
 
-    fn render_playback_buttons(&self) -> impl IntoElement {
+    fn render_playback_button(&self, size: impl Into<Pixels>) -> impl IntoElement {
+        let size = size.into();
+        let inner_size = size - px(2.);
+
         div()
+            .relative()
+            .flex_none()
+            .w(size)
+            .h(size + px(1.))
+            .child(
+                circle(size)
+                    .absolute()
+                    .bottom(px(0.))
+                    .left(px(0.))
+                    .bg(vertical_linear_gradient(rgb(0x5E5E5E), rgb(0xD5D3D6))),
+            )
+            .child(
+                circle(size)
+                    .border_1()
+                    .border_color(rgb(0x5E5E5E))
+                    .bg(rgb(0xF0F0F0)),
+            )
+    }
+
+    fn render_playback_buttons(&self) -> impl IntoElement {
+        h_stack()
+            .gap(px(4.))
+            .items_center()
+            .child(self.render_playback_button(px(26.)))
+            .child(self.render_playback_button(px(30.)))
+            .child(self.render_playback_button(px(26.)))
     }
 
     fn render_volume_controls(&self) -> impl IntoElement {

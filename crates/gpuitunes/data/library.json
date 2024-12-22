@@ -1,0 +1,139 @@
+{
+  "tracks": [
+    {
+      "title": "Intro",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 60,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 10
+    },
+    {
+      "title": "Last Living Souls",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 193,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 25
+    },
+    {
+      "title": "Kids with Guns",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 225,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 30
+    },
+    {
+      "title": "O Green World",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 271,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 20
+    },
+    {
+      "title": "Dirty Harry",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 223,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 35
+    },
+    {
+      "title": "Feel Good Inc.",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 221,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 50
+    },
+    {
+      "title": "El Mañana",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 230,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 28
+    },
+    {
+      "title": "Every Planet We Reach Is Dead",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 295,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 22
+    },
+    {
+      "title": "November Has Come",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 160,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 18
+    },
+    {
+      "title": "All Alone",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 210,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 15
+    },
+    {
+      "title": "White Light",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 134,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 12
+    },
+    {
+      "title": "DARE",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 244,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 40
+    },
+    {
+      "title": "Fire Coming Out of the Monkey's Head",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 196,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 17
+    },
+    {
+      "title": "Don't Get Lost in Heaven",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 120,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 14
+    },
+    {
+      "title": "Demon Days",
+      "artist": "Gorillaz",
+      "album": "Demon Days",
+      "duration": 266,
+      "kind": "MPEG audio file",
+      "date_added": "2005-05-09",
+      "plays": 23
+    }
+  ]
+}

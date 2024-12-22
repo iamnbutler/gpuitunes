@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 
+use std::{collections::HashMap, path::PathBuf};
+
 use gpui::*;
 use prelude::FluentBuilder as _;
+use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 
 fn h_stack() -> Div {
@@ -89,12 +92,55 @@ impl From<i32> for PlaybackTime {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+struct TrackId(String);
+
+fn track_id(title: String, artist: String, album: String) -> TrackId {
+    let uuid = uuid::Uuid::new_v4();
+    let id = format!("{}-{}-{}-{}", title, artist, album, uuid);
+    TrackId(id)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct SerializableTrack {
+    title: String,
+    artist: String,
+    album: String,
+    duration: i32,
+    kind: String,
+    date_added: String,
+    plays: i32,
+}
+
 #[derive(Debug, Clone)]
 struct Track {
+    id: TrackId,
     title: SharedString,
     artist: SharedString,
     album: SharedString,
     duration: PlaybackTime,
+    kind: String,
+    date_added: String,
+    plays: i32,
+}
+
+impl From<SerializableTrack> for Track {
+    fn from(track: SerializableTrack) -> Self {
+        let title = track.title.clone();
+        let artist = track.artist.clone();
+        let album = track.album.clone();
+
+        Track {
+            id: track_id(title.clone(), artist.clone(), album.clone()),
+            title: track.title.into(),
+            artist: track.artist.into(),
+            album: track.album.into(),
+            duration: track.duration.into(),
+            kind: track.kind,
+            date_added: track.date_added,
+            plays: track.plays,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -137,31 +183,79 @@ impl CurrentTrack {
     }
 }
 
-struct PlayerState {
-    current_track: CurrentTrack,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializableLibrary {
+    tracks: Vec<SerializableTrack>,
 }
 
-impl PlayerState {
+pub struct Library {
+    tracks: HashMap<TrackId, Track>,
+}
+
+impl Library {
+    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("data");
+        path.push("library.json");
+
+        let file = std::fs::File::open(path)?;
+        let serializable_library: SerializableLibrary = serde_json::from_reader(file)?;
+
+        let tracks = serializable_library
+            .tracks
+            .into_iter()
+            .map(|track| {
+                let track: Track = track.into();
+                (track.id.clone(), track)
+            })
+            .collect();
+
+        Ok(Library { tracks })
+    }
+}
+
+struct AppState {
+    current_track: CurrentTrack,
+    library: Library,
+}
+
+impl AppState {
     fn new(_cx: &mut ModelContext<Self>) -> Self {
-        let default_track = Track {
+        let default_track_base = SerializableTrack {
             title: "Feel Good Inc.".into(),
             artist: "Gorillaz".into(),
             album: "Demon Days".into(),
-            duration: PlaybackTime(120),
+            duration: 120,
+            kind: "MPEG audio file".into(),
+            date_added: "2005-05-09".into(),
+            plays: 34,
         };
 
-        PlayerState {
+        let default_track: Track = default_track_base.into();
+
+        let library = match Library::load() {
+            Ok(lib) => lib,
+            Err(e) => {
+                eprintln!("Failed to load library: {}", e);
+                Library {
+                    tracks: HashMap::new(),
+                }
+            }
+        };
+
+        AppState {
             current_track: CurrentTrack::new(default_track),
+            library,
         }
     }
 }
 
 struct TitleBar {
-    state: Model<PlayerState>,
+    state: Model<AppState>,
 }
 
 impl TitleBar {
-    fn new(state: Model<PlayerState>) -> Self {
+    fn new(state: Model<AppState>) -> Self {
         TitleBar {
             state: state.clone(),
         }
@@ -459,7 +553,7 @@ impl TitleBar {
 }
 
 struct GpuiTunes {
-    state: Model<PlayerState>,
+    state: Model<AppState>,
 }
 
 impl Render for GpuiTunes {
@@ -504,7 +598,7 @@ fn main() {
                 ..Default::default()
             },
             |cx| {
-                let state = cx.new_model(|cx| PlayerState::new(cx));
+                let state = cx.new_model(|cx| AppState::new(cx));
 
                 cx.new_view(|_cx| GpuiTunes { state })
             },

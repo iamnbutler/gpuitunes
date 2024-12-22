@@ -72,14 +72,108 @@ fn vertical_linear_gradient(start: impl Into<Hsla>, stop: impl Into<Hsla>) -> Ba
     gpui::linear_gradient(180.0, start, end)
 }
 
-struct TitleBar {}
+#[derive(Debug, Clone, Copy)]
+struct PlaybackTime(i32);
+
+impl PlaybackTime {
+    fn format(&self) -> String {
+        let minutes = self.0 / 60;
+        let seconds = self.0 % 60;
+        format!("{:02}:{:02}", minutes, seconds)
+    }
+}
+
+impl From<i32> for PlaybackTime {
+    fn from(seconds: i32) -> Self {
+        PlaybackTime(seconds)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Track {
+    title: SharedString,
+    artist: SharedString,
+    album: SharedString,
+    duration: PlaybackTime,
+}
+
+#[derive(Debug, Clone)]
+struct CurrentTrack {
+    track: Track,
+    current_time: PlaybackTime,
+}
+
+impl CurrentTrack {
+    fn new(track: Track) -> Self {
+        CurrentTrack {
+            track,
+            current_time: PlaybackTime(0),
+        }
+    }
+
+    fn title(&self) -> SharedString {
+        self.track.title.clone()
+    }
+
+    fn artist(&self) -> SharedString {
+        self.track.artist.clone()
+    }
+
+    fn album(&self) -> SharedString {
+        self.track.album.clone()
+    }
+
+    fn duration(&self) -> PlaybackTime {
+        self.track.duration
+    }
+
+    fn time_remaining(&self) -> PlaybackTime {
+        let time = self.track.duration.0 - self.current_time.0;
+        time.into()
+    }
+
+    fn percent_complete(&self) -> f32 {
+        (self.current_time.0 as f32 / self.track.duration.0 as f32) * 100.0
+    }
+}
+
+struct PlayerState {
+    current_track: CurrentTrack,
+}
+
+impl PlayerState {
+    fn new(_cx: &mut ModelContext<Self>) -> Self {
+        let default_track = Track {
+            title: "Feel Good Inc.".into(),
+            artist: "Gorillaz".into(),
+            album: "Demon Days".into(),
+            duration: PlaybackTime(120),
+        };
+
+        PlayerState {
+            current_track: CurrentTrack::new(default_track),
+        }
+    }
+}
+
+struct TitleBar {
+    state: Model<PlayerState>,
+}
+
+impl TitleBar {
+    fn new(state: Model<PlayerState>) -> Self {
+        TitleBar {
+            state: state.clone(),
+        }
+    }
+}
 
 impl Render for TitleBar {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let traffic_lights_width = px(62.);
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let traffic_lights_width = px(72.);
+        let second_row_side = px(250.);
 
         v_stack()
-            .h(px(64.))
             .w_full()
             .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
             .border_b_1()
@@ -92,25 +186,54 @@ impl Render for TitleBar {
                     .w_full()
                     .justify_between()
                     .child(self.render_traffic_lights(traffic_lights_width))
-                    .child(div().child("gpuItunes"))
+                    .child(div().child("gpuiTunes"))
                     .child(spacer().width(traffic_lights_width)),
             )
             .child(
-                h_stack()
-                    .h(px(44.))
+                div()
+                    .flex()
+                    .items_start()
+                    .h(px(54.))
                     .flex_grow()
                     .w_full()
-                    .child(spacer().width(px(27.)))
-                    .child(self.render_playback_buttons())
-                    .child(self.render_volume_controls())
-                    .child(spacer().grow()),
+                    .gap(px(10.))
+                    .child(
+                        h_stack()
+                            .w(second_row_side)
+                            .h_full()
+                            .child(spacer().width(px(27.)))
+                            .child(self.render_playback_buttons())
+                            .child(self.render_volume_controls()),
+                    )
+                    .child(
+                        h_stack()
+                            .flex_grow()
+                            .justify_center()
+                            .child(self.render_now_playing(cx)),
+                    )
+                    .child(
+                        div()
+                            .h_full()
+                            .flex_none()
+                            .justify_center()
+                            .w(second_row_side)
+                            .child(
+                                h_stack()
+                                    .w(px(38.))
+                                    .justify_center()
+                                    .flex_none()
+                                    .child(self.render_browse()),
+                            ),
+                    ),
             )
     }
 }
 
 impl TitleBar {
     fn render_traffic_light(&self) -> impl IntoElement {
-        circle(px(12.))
+        circle(px(14.))
+            .mt(px(4.))
+            .mb(px(2.))
             .rounded_full()
             .overflow_hidden()
             .p_px()
@@ -123,7 +246,7 @@ impl TitleBar {
                 spread_radius: px(1.),
             }])
             .child(
-                circle(px(10.))
+                circle(px(12.))
                     .overflow_hidden()
                     .relative()
                     .bg(vertical_linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
@@ -133,7 +256,7 @@ impl TitleBar {
                             .left(px(3.))
                             .absolute()
                             .overflow_hidden()
-                            .w(px(4.))
+                            .w(px(6.))
                             .h(px(3.))
                             .rounded_t_full()
                             .bg(vertical_linear_gradient(rgb(0xFFFFFF), rgb(0x9EA3A9))),
@@ -156,7 +279,6 @@ impl TitleBar {
 
     fn render_playback_button(&self, size: impl Into<Pixels>) -> impl IntoElement {
         let size = size.into();
-        let inner_size = size - px(2.);
 
         div()
             .relative()
@@ -173,7 +295,7 @@ impl TitleBar {
             .child(
                 circle(size)
                     .border_1()
-                    .border_color(rgb(0x5E5E5E))
+                    .border_color(rgb(0x737373))
                     .bg(rgb(0xF0F0F0)),
             )
     }
@@ -182,17 +304,137 @@ impl TitleBar {
         h_stack()
             .gap(px(4.))
             .items_center()
-            .child(self.render_playback_button(px(26.)))
             .child(self.render_playback_button(px(30.)))
-            .child(self.render_playback_button(px(26.)))
+            .child(self.render_playback_button(px(36.)))
+            .child(self.render_playback_button(px(30.)))
     }
 
     fn render_volume_controls(&self) -> impl IntoElement {
-        div()
+        let current_volume: f32 = 0.7;
+        let width: f32 = 75.0;
+        let thumb_width: f32 = 12.0;
+        let thumb_position = current_volume * width - (thumb_width / 2.0);
+
+        h_stack()
+            .ml(px(10.))
+            .gap_1()
+            .child(div().size(px(12.)).bg(gpui::red()))
+            .child(
+                h_stack()
+                    .relative()
+                    .child(
+                        div()
+                            .w(px(75.))
+                            .h(px(5.))
+                            .rounded_full()
+                            .border_1()
+                            .border_color(rgb(0x444444))
+                            .bg(vertical_linear_gradient(rgb(0x666666), rgb(0x838383))),
+                    )
+                    .child(
+                        circle(px(thumb_width))
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .absolute()
+                            .left(px(thumb_position))
+                            .bg(rgb(0xFEFEFE))
+                            .border_1()
+                            .border_color(rgb(0x7C7C7C))
+                            .child(
+                                circle(px(4.0))
+                                    .bg(vertical_linear_gradient(rgb(0x3D3D3D), rgb(0x9A9A9A))),
+                            ),
+                    ),
+            )
+            .child(div().size(px(12.)).bg(gpui::red()))
     }
 
-    fn render_now_playing(&self) -> impl IntoElement {
-        div()
+    fn render_now_playing(&self, cx: &ViewContext<Self>) -> impl IntoElement {
+        let current_track = self.state.read(cx).current_track.clone();
+        let title = current_track.title().to_string();
+        let artist = current_track.artist().to_string();
+
+        let width: f32 = 350.;
+        let height: f32 = 46.;
+
+        h_stack()
+            .rounded(px(5.0))
+            .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
+            .px_px()
+            .flex_grow()
+            .h(px(height))
+            .w(px(width))
+            .child(
+                h_stack()
+                    .w(px(width - 2.))
+                    .h(px(height - 2.))
+                    .px_px()
+                    .flex_grow()
+                    .rounded(px(4.0))
+                    .bg(vertical_linear_gradient(rgb(0x969988), rgb(0xC1C4AF)))
+                    .child(
+                        h_stack()
+                            .flex_grow()
+                            .w(px(width - 4.))
+                            .h(px(height - 4.))
+                            .rounded(px(3.0))
+                            .bg(rgb(0xD6DABF))
+                            .gap(px(8.))
+                            .child(div().size(px(11.)).bg(gpui::red()))
+                            .child(
+                                v_stack()
+                                    .flex_grow()
+                                    .w_full()
+                                    .gap(px(2.))
+                                    .child(div().text_size(px(11.)).child(title))
+                                    .child(div().text_size(px(11.)).child(artist))
+                                    .child(
+                                        h_stack()
+                                            .gap(px(4.))
+                                            .flex_grow()
+                                            .items_center()
+                                            .child(
+                                                div()
+                                                    .text_size(px(10.))
+                                                    .child(current_track.current_time.format()),
+                                            )
+                                            .child(
+                                                div()
+                                                    .flex_grow()
+                                                    .items_center()
+                                                    .h(px(9.))
+                                                    .relative()
+                                                    // .shadow(smallvec![BoxShadow {
+                                                    //     color: hsla(69. / 360., 0.15, 0.72, 1.0),
+                                                    //     offset: point(px(0.), px(1.)),
+                                                    //     blur_radius: px(1.),
+                                                    //     spread_radius: px(0.),
+                                                    // }])
+                                                    .border_1()
+                                                    .border_color(rgb(0x000000))
+                                                    .child(
+                                                        circle(px(8.))
+                                                            .absolute()
+                                                            .top(px(-2.))
+                                                            .left(relative(
+                                                                current_track.percent_complete(),
+                                                            ))
+                                                            .bg(rgb(0xFFFFFF))
+                                                            .border_1()
+                                                            .border_color(rgb(0x999999)),
+                                                    ),
+                                            )
+                                            .child(
+                                                div()
+                                                    .text_size(px(10.))
+                                                    .child(current_track.time_remaining().format()),
+                                            ),
+                                    ),
+                            )
+                            .child(div().size(px(11.)).bg(gpui::red())),
+                    ),
+            )
     }
 
     fn render_search(&self) -> impl IntoElement {
@@ -201,16 +443,30 @@ impl TitleBar {
 
     fn render_browse(&self) -> impl IntoElement {
         div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .child(
+                div()
+                    .size(px(33.))
+                    .rounded_full()
+                    .bg(rgb(0xF0F0F0))
+                    .border_1()
+                    .border_color(rgb(0x5E5E5E)),
+            )
+            .child(div().mt(px(3.)).text_size(px(11.)).child("Browse"))
     }
 }
 
 struct GpuiTunes {
-    text: SharedString,
+    state: Model<PlayerState>,
 }
 
 impl Render for GpuiTunes {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let title_bar = cx.new_view(|_| TitleBar {});
+        let title_bar = cx.new_view(|_| TitleBar {
+            state: self.state.clone(),
+        });
         // This should be more like 4.0, but later macOS versions have
         // a higher default window border radius
         let window_rounding = px(10.0);
@@ -248,9 +504,9 @@ fn main() {
                 ..Default::default()
             },
             |cx| {
-                cx.new_view(|_cx| GpuiTunes {
-                    text: "World".into(),
-                })
+                let state = cx.new_model(|cx| PlayerState::new(cx));
+
+                cx.new_view(|_cx| GpuiTunes { state })
             },
         )
         .unwrap();

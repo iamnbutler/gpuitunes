@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-use std::{collections::HashMap, path::PathBuf};
+use itertools::Itertools;
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use gpui::*;
 use prelude::FluentBuilder as _;
@@ -95,6 +96,12 @@ impl From<i32> for PlaybackTime {
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 struct TrackId(String);
 
+impl Into<String> for TrackId {
+    fn into(self) -> String {
+        self.0
+    }
+}
+
 fn track_id(title: String, artist: String, album: String) -> TrackId {
     let uuid = uuid::Uuid::new_v4();
     let id = format!("{}-{}-{}-{}", title, artist, album, uuid);
@@ -110,6 +117,8 @@ struct SerializableTrack {
     kind: String,
     date_added: String,
     plays: i32,
+    track_number: u32,
+    total_tracks: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -122,6 +131,8 @@ struct Track {
     kind: String,
     date_added: String,
     plays: i32,
+    track_number: u32,
+    total_tracks: u32,
 }
 
 impl From<SerializableTrack> for Track {
@@ -139,6 +150,8 @@ impl From<SerializableTrack> for Track {
             kind: track.kind,
             date_added: track.date_added,
             plays: track.plays,
+            track_number: track.track_number,
+            total_tracks: track.total_tracks,
         }
     }
 }
@@ -181,6 +194,10 @@ impl CurrentTrack {
     fn percent_complete(&self) -> f32 {
         (self.current_time.0 as f32 / self.track.duration.0 as f32) * 100.0
     }
+
+    fn track_number(&self) -> String {
+        format!("{} of {}", self.track.track_number, self.track.total_tracks)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -190,6 +207,7 @@ pub struct SerializableLibrary {
 
 pub struct Library {
     tracks: HashMap<TrackId, Track>,
+    track_order: Vec<TrackId>,
 }
 
 impl Library {
@@ -201,7 +219,7 @@ impl Library {
         let file = std::fs::File::open(path)?;
         let serializable_library: SerializableLibrary = serde_json::from_reader(file)?;
 
-        let tracks = serializable_library
+        let tracks: HashMap<TrackId, Track> = serializable_library
             .tracks
             .into_iter()
             .map(|track| {
@@ -210,13 +228,39 @@ impl Library {
             })
             .collect();
 
-        Ok(Library { tracks })
+        let ordered_keys: Vec<TrackId> = tracks
+            .clone()
+            .values()
+            .map(|track| track.id.clone())
+            .collect();
+
+        let mut library = Library {
+            tracks,
+            track_order: ordered_keys,
+        };
+
+        library.sort_by_artist();
+
+        Ok(library)
+    }
+
+    fn sort_by_artist(&mut self) {
+        self.track_order.sort_by(|a, b| {
+            let track_a = self.tracks.get(a).unwrap();
+            let track_b = self.tracks.get(b).unwrap();
+            track_a
+                .artist
+                .cmp(&track_b.artist)
+                .then(track_a.album.cmp(&track_b.album))
+                .then(track_a.track_number.cmp(&track_b.track_number))
+        });
     }
 }
 
 struct AppState {
     current_track: CurrentTrack,
-    library: Library,
+    library: Arc<Library>,
+    sidebar_width: Option<f32>,
 }
 
 impl AppState {
@@ -229,6 +273,8 @@ impl AppState {
             kind: "MPEG audio file".into(),
             date_added: "2005-05-09".into(),
             plays: 34,
+            track_number: 6,
+            total_tracks: 15,
         };
 
         let default_track: Track = default_track_base.into();
@@ -239,14 +285,170 @@ impl AppState {
                 eprintln!("Failed to load library: {}", e);
                 Library {
                     tracks: HashMap::new(),
+                    track_order: Vec::new(),
                 }
             }
         };
 
         AppState {
             current_track: CurrentTrack::new(default_track),
-            library,
+            library: Arc::new(library),
+            sidebar_width: None,
         }
+    }
+}
+
+struct Sidebar {
+    state: Model<AppState>,
+}
+
+impl Sidebar {
+    fn new(state: Model<AppState>) -> Self {
+        Sidebar {
+            state: state.clone(),
+        }
+    }
+}
+
+impl Render for Sidebar {
+    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+    }
+}
+
+struct LibraryContent {
+    state: Model<AppState>,
+}
+
+impl LibraryContent {
+    fn new(state: Model<AppState>) -> Self {
+        LibraryContent {
+            state: state.clone(),
+        }
+    }
+
+    fn render_entry(
+        &mut self,
+        id: &TrackId,
+        is_selected: bool,
+        track: &Track,
+        _cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let id: String = id.clone().into();
+        let is_odd = track.id.0.len() % 2 != 0;
+        let row = div()
+            .id(ElementId::Name(id.into()))
+            .when(is_odd, |div| div.bg(rgb(0xF0F0F0)))
+            .when(is_selected, |div| div.bg(rgb(0xD0D0D0)))
+            .min_w_full()
+            .flex()
+            .flex_row()
+            .items_center()
+            .px(px(5.))
+            .py(px(2.))
+            .child(
+                div()
+                    .overflow_hidden()
+                    .flex_grow()
+                    .child(track.title.clone()),
+            )
+            .child(
+                div()
+                    .overflow_hidden()
+                    .w(px(60.))
+                    .child(track.duration.format()),
+            )
+            .child(
+                div()
+                    .overflow_hidden()
+                    .w(px(150.))
+                    .child(track.artist.clone()),
+            )
+            .child(
+                div()
+                    .overflow_hidden()
+                    .w(px(150.))
+                    .child(track.album.clone()),
+            )
+            .child(
+                div()
+                    .overflow_hidden()
+                    .w(px(100.))
+                    .child(track.date_added.clone()),
+            )
+            .child(
+                div()
+                    .overflow_hidden()
+                    .w(px(100.))
+                    .child(track.kind.clone()),
+            );
+        row
+    }
+}
+
+impl Render for LibraryContent {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        // let row_height: f32 = 11.0;
+        let library = self.state.read(cx).library.clone();
+        let item_count = library.clone().tracks.len();
+        let tracks: Vec<Track> = library.tracks.values().cloned().collect();
+
+        let list = uniform_list(cx.view().clone(), "library_content", item_count, {
+            move |library_content, range, cx| {
+                let mut items = Vec::with_capacity(range.end - range.start);
+                for track in tracks[range.start..range.end].iter() {
+                    items.push(library_content.render_entry(&track.id, false, track, cx));
+                }
+                items
+            }
+        })
+        .size_full()
+        .with_sizing_behavior(ListSizingBehavior::Infer)
+        .with_horizontal_sizing_behavior(ListHorizontalSizingBehavior::Unconstrained);
+
+        list.into_any_element()
+    }
+}
+
+struct Footer {
+    state: Model<AppState>,
+}
+
+impl Footer {
+    fn new(state: Model<AppState>) -> Self {
+        Footer {
+            state: state.clone(),
+        }
+    }
+}
+
+impl Render for Footer {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_row()
+            .justify_between()
+            .items_center()
+            .h(px(36.))
+            .border_t_1()
+            .border_color(rgb(0x414141))
+            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+            .child(
+                h_stack()
+                    .ml(px(10.))
+                    .child(div().size(px(24.)).bg(gpui::red()))
+                    .child(div().size(px(24.)).bg(gpui::blue())),
+            )
+            .child(div().text_size(px(12.)).child(format!(
+                "{} tracks",
+                self.state.read(cx).library.tracks.len()
+            )))
+            .child(
+                h_stack()
+                    .mr(px(10.))
+                    .child(div().size(px(24.)).bg(gpui::green()))
+                    .child(div().size(px(24.)).bg(gpui::yellow())),
+            )
     }
 }
 
@@ -452,6 +654,47 @@ impl TitleBar {
         let width: f32 = 350.;
         let height: f32 = 46.;
 
+        let inner_element = v_stack()
+            .flex_grow()
+            .w_full()
+            .gap(px(2.))
+            .child(div().text_size(px(11.)).child(title))
+            .child(div().text_size(px(11.)).child(artist))
+            .child(
+                h_stack()
+                    .gap(px(4.))
+                    .flex_grow()
+                    .items_center()
+                    .child(
+                        div()
+                            .text_size(px(10.))
+                            .child(current_track.current_time.format()),
+                    )
+                    .child(
+                        div()
+                            .flex_grow()
+                            .items_center()
+                            .h(px(9.))
+                            .relative()
+                            .border_1()
+                            .border_color(rgb(0x000000))
+                            .child(
+                                circle(px(8.))
+                                    .absolute()
+                                    .top(px(-2.))
+                                    .left(relative(current_track.percent_complete()))
+                                    .bg(rgb(0xFFFFFF))
+                                    .border_1()
+                                    .border_color(rgb(0x999999)),
+                            ),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(10.))
+                            .child(current_track.time_remaining().format()),
+                    ),
+            );
+
         h_stack()
             .rounded(px(5.0))
             .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
@@ -476,56 +719,7 @@ impl TitleBar {
                             .bg(rgb(0xD6DABF))
                             .gap(px(8.))
                             .child(div().size(px(11.)).bg(gpui::red()))
-                            .child(
-                                v_stack()
-                                    .flex_grow()
-                                    .w_full()
-                                    .gap(px(2.))
-                                    .child(div().text_size(px(11.)).child(title))
-                                    .child(div().text_size(px(11.)).child(artist))
-                                    .child(
-                                        h_stack()
-                                            .gap(px(4.))
-                                            .flex_grow()
-                                            .items_center()
-                                            .child(
-                                                div()
-                                                    .text_size(px(10.))
-                                                    .child(current_track.current_time.format()),
-                                            )
-                                            .child(
-                                                div()
-                                                    .flex_grow()
-                                                    .items_center()
-                                                    .h(px(9.))
-                                                    .relative()
-                                                    // .shadow(smallvec![BoxShadow {
-                                                    //     color: hsla(69. / 360., 0.15, 0.72, 1.0),
-                                                    //     offset: point(px(0.), px(1.)),
-                                                    //     blur_radius: px(1.),
-                                                    //     spread_radius: px(0.),
-                                                    // }])
-                                                    .border_1()
-                                                    .border_color(rgb(0x000000))
-                                                    .child(
-                                                        circle(px(8.))
-                                                            .absolute()
-                                                            .top(px(-2.))
-                                                            .left(relative(
-                                                                current_track.percent_complete(),
-                                                            ))
-                                                            .bg(rgb(0xFFFFFF))
-                                                            .border_1()
-                                                            .border_color(rgb(0x999999)),
-                                                    ),
-                                            )
-                                            .child(
-                                                div()
-                                                    .text_size(px(10.))
-                                                    .child(current_track.time_remaining().format()),
-                                            ),
-                                    ),
-                            )
+                            .child(inner_element)
                             .child(div().size(px(11.)).bg(gpui::red())),
                     ),
             )
@@ -561,6 +755,15 @@ impl Render for GpuiTunes {
         let title_bar = cx.new_view(|_| TitleBar {
             state: self.state.clone(),
         });
+
+        let library = cx.new_view(|_| LibraryContent {
+            state: self.state.clone(),
+        });
+
+        let footer = cx.new_view(|_| Footer {
+            state: self.state.clone(),
+        });
+
         // This should be more like 4.0, but later macOS versions have
         // a higher default window border radius
         let window_rounding = px(10.0);
@@ -578,7 +781,8 @@ impl Render for GpuiTunes {
             .text_color(rgb(0x0F1219))
             .text_size(px(14.))
             .child(title_bar.clone())
-            .child(div().flex_1())
+            .child(library.clone())
+            .child(footer.clone())
             .child(
                 div()
                     .absolute()

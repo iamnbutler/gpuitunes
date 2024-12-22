@@ -7,7 +7,9 @@
       "duration": 60,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 10
+      "plays": 10,
+      "track_number": 1,
+      "total_tracks": 15
     },
     {
       "title": "Last Living Souls",
@@ -16,7 +18,9 @@
       "duration": 193,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 25
+      "plays": 25,
+      "track_number": 2,
+      "total_tracks": 15
     },
     {
       "title": "Kids with Guns",
@@ -25,7 +29,9 @@
       "duration": 225,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 30
+      "plays": 30,
+      "track_number": 3,
+      "total_tracks": 15
     },
     {
       "title": "O Green World",
@@ -34,7 +40,9 @@
       "duration": 271,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 20
+      "plays": 20,
+      "track_number": 4,
+      "total_tracks": 15
     },
     {
       "title": "Dirty Harry",
@@ -43,7 +51,9 @@
       "duration": 223,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 35
+      "plays": 35,
+      "track_number": 5,
+      "total_tracks": 15
     },
     {
       "title": "Feel Good Inc.",
@@ -52,7 +62,9 @@
       "duration": 221,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 50
+      "plays": 50,
+      "track_number": 6,
+      "total_tracks": 15
     },
     {
       "title": "El Mañana",
@@ -61,7 +73,9 @@
       "duration": 230,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 28
+      "plays": 28,
+      "track_number": 7,
+      "total_tracks": 15
     },
     {
       "title": "Every Planet We Reach Is Dead",
@@ -70,7 +84,9 @@
       "duration": 295,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 22
+      "plays": 22,
+      "track_number": 8,
+      "total_tracks": 15
     },
     {
       "title": "November Has Come",
@@ -79,7 +95,9 @@
       "duration": 160,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 18
+      "plays": 18,
+      "track_number": 9,
+      "total_tracks": 15
     },
     {
       "title": "All Alone",
@@ -88,7 +106,9 @@
       "duration": 210,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 15
+      "plays": 15,
+      "track_number": 10,
+      "total_tracks": 15
     },
     {
       "title": "White Light",
@@ -97,7 +117,9 @@
       "duration": 134,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 12
+      "plays": 12,
+      "track_number": 11,
+      "total_tracks": 15
     },
     {
       "title": "DARE",
@@ -106,7 +128,9 @@
       "duration": 244,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 40
+      "plays": 40,
+      "track_number": 12,
+      "total_tracks": 15
     },
     {
       "title": "Fire Coming Out of the Monkey's Head",
@@ -115,7 +139,9 @@
       "duration": 196,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 17
+      "plays": 17,
+      "track_number": 13,
+      "total_tracks": 15
     },
     {
       "title": "Don't Get Lost in Heaven",
@@ -124,7 +150,9 @@
       "duration": 120,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 14
+      "plays": 14,
+      "track_number": 14,
+      "total_tracks": 15
     },
     {
       "title": "Demon Days",
@@ -133,7 +161,9 @@
       "duration": 266,
       "kind": "MPEG audio file",
       "date_added": "2005-05-09",
-      "plays": 23
+      "plays": 23,
+      "track_number": 15,
+      "total_tracks": 15
     }
   ]
 }

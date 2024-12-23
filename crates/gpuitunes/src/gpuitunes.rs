@@ -266,7 +266,7 @@ impl Column {
     pub fn width(&self) -> f32 {
         self.width.unwrap_or(match self.kind {
             ColumnKind::Playing => 17.0,
-            ColumnKind::Title => 200.0,
+            ColumnKind::Title => 300.0,
             ColumnKind::Artist => 150.0,
             ColumnKind::Album => 150.0,
             ColumnKind::Duration => 100.0,
@@ -465,8 +465,50 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
-        div()
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let state = self.state.read(cx);
+        let sidebar_width = state.sidebar_width.unwrap_or(182.);
+
+        v_stack()
+            .h_full()
+            .flex_none()
+            .w(px(sidebar_width))
+            .border_r_1()
+            .border_color(rgb(0x3F3F3F))
+            .child(
+                v_stack()
+                    .size_full()
+                    .child(
+                        v_stack()
+                            .bg(rgb(0xE8ECF7))
+                            .flex_1()
+                            .child(
+                                div()
+                                    .h(px(16.))
+                                    .border_b_1()
+                                    .border_color(rgb(0x666664))
+                                    .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+                                    .child("Source"),
+                            )
+                            .child(div()),
+                    )
+                    .child(
+                        v_stack()
+                            .flex_1()
+                            .bg(rgb(0xFFFFFF))
+                            .border_t_1()
+                            .border_color(rgb(0x3F413C))
+                            .child(
+                                div()
+                                    .h(px(16.))
+                                    .border_b_1()
+                                    .border_color(rgb(0x666664))
+                                    .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+                                    .child("Now Playing"),
+                            )
+                            .child(div()),
+                    ),
+            )
     }
 }
 
@@ -1002,6 +1044,10 @@ impl Render for GpuiTunes {
             state: self.state.clone(),
         });
 
+        let sidebar = cx.new_view(|_| Sidebar {
+            state: self.state.clone(),
+        });
+
         let library = cx.new_view(|_| LibraryContent {
             state: self.state.clone(),
         });
@@ -1028,7 +1074,14 @@ impl Render for GpuiTunes {
             .text_color(rgb(0x0F1219))
             .text_size(px(14.))
             .child(title_bar.clone())
-            .child(library.clone())
+            .child(
+                h_stack()
+                    .w_full()
+                    .flex_1()
+                    .overflow_hidden()
+                    .child(sidebar.clone())
+                    .child(library.clone()),
+            )
             .child(footer.clone())
             .on_click(|e, _cx| {
                 println!("{:?}", e);

@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use itertools::Itertools;
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use gpui::*;
@@ -203,11 +202,145 @@ impl CurrentTrack {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableLibrary {
     tracks: Vec<SerializableTrack>,
+    columns: Vec<Column>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ColumnKind {
+    Playing,
+    Title,
+    Artist,
+    Album,
+    Duration,
+    TrackNumber,
+    Kind,
+    DateAdded,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Column {
+    kind: ColumnKind,
+    width: Option<f32>,
+    enabled: bool,
+}
+
+fn default_columns() -> Vec<Column> {
+    vec![
+        Column::new(ColumnKind::Playing),
+        Column::new(ColumnKind::Title),
+        Column::new(ColumnKind::Artist),
+        Column::new(ColumnKind::Album),
+        Column::new(ColumnKind::Duration),
+        Column::new(ColumnKind::TrackNumber),
+        Column::new(ColumnKind::Kind),
+        Column::new(ColumnKind::DateAdded),
+    ]
+}
+
+impl Column {
+    pub fn new(kind: ColumnKind) -> Self {
+        Column {
+            kind,
+            width: None,
+            enabled: true,
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self.kind {
+            ColumnKind::Playing => "".to_string(),
+            ColumnKind::Title => "Name".to_string(),
+            ColumnKind::Artist => "Artist".to_string(),
+            ColumnKind::Album => "Album".to_string(),
+            ColumnKind::Duration => "Time".to_string(),
+            ColumnKind::TrackNumber => "Track Number".to_string(),
+            ColumnKind::Kind => "Kind".to_string(),
+            ColumnKind::DateAdded => "Date Added".to_string(),
+        }
+    }
+
+    pub fn set_width(&mut self, width: Option<f32>) {
+        self.width = width;
+    }
+
+    pub fn width(&self) -> f32 {
+        self.width.unwrap_or(match self.kind {
+            ColumnKind::Playing => 17.0,
+            ColumnKind::Title => 200.0,
+            ColumnKind::Artist => 150.0,
+            ColumnKind::Album => 150.0,
+            ColumnKind::Duration => 100.0,
+            ColumnKind::TrackNumber => 50.0,
+            ColumnKind::Kind => 100.0,
+            ColumnKind::DateAdded => 150.0,
+        })
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
+    }
+
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Library {
     tracks: HashMap<TrackId, Track>,
     track_order: Vec<TrackId>,
+    columns: Vec<Column>,
+}
+
+impl Library {
+    pub fn columns(&self) -> Vec<Column> {
+        self.columns.clone()
+    }
+
+    pub fn set_columns(&mut self, columns: Vec<Column>) {
+        self.columns = columns;
+    }
+
+    pub fn sort_by_column(&mut self, column: ColumnKind) {
+        match column {
+            ColumnKind::Playing => (),
+            ColumnKind::Title => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a.title.cmp(&track_b.title)
+            }),
+            ColumnKind::Artist => self.sort_by_artist(),
+            ColumnKind::Album => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a
+                    .album
+                    .cmp(&track_b.album)
+                    .then(track_a.artist.cmp(&track_b.artist))
+                    .then(track_a.track_number.cmp(&track_b.track_number))
+            }),
+            ColumnKind::Duration => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a.duration.0.cmp(&track_b.duration.0)
+            }),
+            ColumnKind::TrackNumber => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a.track_number.cmp(&track_b.track_number)
+            }),
+            ColumnKind::Kind => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a.kind.cmp(&track_b.kind)
+            }),
+            ColumnKind::DateAdded => self.track_order.sort_by(|a, b| {
+                let track_a = self.tracks.get(a).unwrap();
+                let track_b = self.tracks.get(b).unwrap();
+                track_a.date_added.cmp(&track_b.date_added)
+            }),
+        }
+    }
 }
 
 impl Library {
@@ -234,9 +367,16 @@ impl Library {
             .map(|track| track.id.clone())
             .collect();
 
+        let columns = if serializable_library.columns.is_empty() {
+            default_columns()
+        } else {
+            serializable_library.columns.clone()
+        };
+
         let mut library = Library {
             tracks,
             track_order: ordered_keys,
+            columns,
         };
 
         library.sort_by_artist();
@@ -286,6 +426,7 @@ impl AppState {
                 Library {
                     tracks: HashMap::new(),
                     track_order: Vec::new(),
+                    columns: Vec::new(),
                 }
             }
         };
@@ -295,6 +436,19 @@ impl AppState {
             library: Arc::new(library),
             sidebar_width: None,
         }
+    }
+
+    fn update_library<F>(&mut self, f: F)
+    where
+        F: FnOnce(&mut Library),
+    {
+        let mut library = (*self.library).clone();
+        f(&mut library);
+        self.library = Arc::new(library);
+    }
+
+    fn columns(&self) -> Vec<Column> {
+        self.library.columns()
     }
 }
 
@@ -329,75 +483,126 @@ impl LibraryContent {
 
     fn render_entry(
         &mut self,
+        ix: usize,
         id: &TrackId,
         is_selected: bool,
         track: &Track,
-        _cx: &mut ViewContext<Self>,
+        cx: &mut ViewContext<Self>,
     ) -> impl IntoElement {
         let id: String = id.clone().into();
-        let is_odd = track.id.0.len() % 2 != 0;
-        let row = div()
+        let is_odd = ix % 2 != 0;
+        let library = self.state.read(cx).library.clone();
+        let columns = library.columns();
+
+        let mut row = h_stack()
             .id(ElementId::Name(id.into()))
             .when(is_odd, |div| div.bg(rgb(0xF0F0F0)))
             .when(is_selected, |div| div.bg(rgb(0xD0D0D0)))
             .min_w_full()
-            .flex()
-            .flex_row()
-            .items_center()
-            .px(px(5.))
-            .py(px(2.))
-            .child(
+            .h(px(16.))
+            .overflow_hidden()
+            .text_size(px(12.));
+
+        for column in columns.iter().filter(|c| c.enabled()) {
+            let this = div().w(px(column.width()));
+
+            let column_content = match column.kind {
+                ColumnKind::Playing => this,
+                ColumnKind::Title => this.child(track.title.clone()),
+                ColumnKind::Artist => this.child(track.artist.clone()),
+                ColumnKind::Album => this.child(track.album.clone()),
+                ColumnKind::Duration => this.child(track.duration.format()),
+                ColumnKind::TrackNumber => this.child(format!("{}", track.track_number)),
+                ColumnKind::Kind => this.child(track.kind.clone()),
+                ColumnKind::DateAdded => this.child(track.date_added.clone()),
+            };
+
+            row = row.child(
                 div()
                     .overflow_hidden()
-                    .flex_grow()
-                    .child(track.title.clone()),
-            )
-            .child(
-                div()
-                    .overflow_hidden()
-                    .w(px(60.))
-                    .child(track.duration.format()),
-            )
-            .child(
-                div()
-                    .overflow_hidden()
-                    .w(px(150.))
-                    .child(track.artist.clone()),
-            )
-            .child(
-                div()
-                    .overflow_hidden()
-                    .w(px(150.))
-                    .child(track.album.clone()),
-            )
-            .child(
-                div()
-                    .overflow_hidden()
-                    .w(px(100.))
-                    .child(track.date_added.clone()),
-            )
-            .child(
-                div()
-                    .overflow_hidden()
-                    .w(px(100.))
-                    .child(track.kind.clone()),
+                    .w(px(column.width()))
+                    .mr(px(6.))
+                    .border_r_1()
+                    .border_color(rgb(0xD9D9D9))
+                    .h_full()
+                    .child(column_content),
             );
+        }
+
         row
+    }
+
+    fn render_column_header(
+        &self,
+        column: Column,
+        state: Model<AppState>,
+        _cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let column_kind = column.kind.clone();
+        div()
+            .id(ElementId::Name(format!("column-{}", column.name()).into()))
+            .w(px(column.width()))
+            .h_full()
+            .flex()
+            .items_center()
+            .mr(px(6.))
+            .border_r_1()
+            .border_color(rgb(0xD9D9D9))
+            .overflow_hidden()
+            .child(div().text_size(px(11.)).child(column.name()))
+            // .on_mouse_down(MouseButton::Left, |_, cx| cx.prevent_default())
+            .on_click(move |e, cx| {
+                println!("{:?}", e);
+                cx.stop_propagation();
+                println!("{:?}", e);
+
+                let state = state.clone();
+                let column_kind = column_kind.clone();
+
+                println!("Clicked on column: {}", column.name());
+                state.update(cx, |state, cx| {
+                    state.update_library(|library| {
+                        println!("Sorting by column: {:?}", column_kind);
+                        library.sort_by_column(column_kind.clone());
+                    });
+                    cx.notify();
+                });
+            })
+    }
+
+    fn render_column_headers(
+        &self,
+        state: Model<AppState>,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
+        let columns = state.read(cx).columns();
+        h_stack().min_w_full().h_full().children(
+            columns
+                .iter()
+                .filter(|c| c.enabled())
+                .map(|column| self.render_column_header(column.clone(), state.clone(), cx)),
+        )
     }
 }
 
 impl Render for LibraryContent {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        // let row_height: f32 = 11.0;
-        let library = self.state.read(cx).library.clone();
-        let item_count = library.clone().tracks.len();
-        let tracks: Vec<Track> = library.tracks.values().cloned().collect();
+        let state = self.state.clone();
+        let app_state = self.state.read(cx);
+        let library = &app_state.library;
+        let item_count = library.track_order.len();
 
         let list = uniform_list(cx.view().clone(), "library_content", item_count, {
+            let library = library.clone();
             move |library_content, range, cx| {
                 let mut items = Vec::with_capacity(range.end - range.start);
-                for track in tracks[range.start..range.end].iter() {
-                    items.push(library_content.render_entry(&track.id, false, track, cx));
+                for (ix, track_id) in library.track_order[range.start..range.end]
+                    .iter()
+                    .enumerate()
+                {
+                    if let Some(track) = library.tracks.get(track_id) {
+                        items.push(library_content.render_entry(ix, track_id, false, track, cx));
+                    }
                 }
                 items
             }
@@ -406,7 +611,27 @@ impl Render for LibraryContent {
         .with_sizing_behavior(ListSizingBehavior::Infer)
         .with_horizontal_sizing_behavior(ListHorizontalSizingBehavior::Unconstrained);
 
-        list.into_any_element()
+        v_stack()
+            .flex_grow()
+            .size_full()
+            .child(
+                h_stack()
+                    .flex_shrink_0()
+                    .w_full()
+                    .h(px(17.))
+                    .bg(rgb(0xF0F0F0))
+                    .border_b_1()
+                    .border_color(rgb(0xC0C0C0))
+                    .child(self.render_column_headers(state.clone(), cx)),
+            )
+            .child(
+                div()
+                    .id("library-list-container")
+                    .size_full()
+                    .flex_grow()
+                    .overflow_hidden()
+                    .child(list.into_any_element()),
+            )
     }
 }
 
@@ -436,7 +661,17 @@ impl Render for Footer {
             .child(
                 h_stack()
                     .ml(px(10.))
-                    .child(div().size(px(24.)).bg(gpui::red()))
+                    .child(
+                        div()
+                            .id("test-button")
+                            .size(px(24.))
+                            .bg(gpui::red())
+                            .active(|this| this.opacity(0.8))
+                            .on_click(cx.listener(move |this, event, cx| {
+                                println!("{:?}", event);
+                                cx.notify();
+                            })),
+                    )
                     .child(div().size(px(24.)).bg(gpui::blue())),
             )
             .child(div().text_size(px(12.)).child(format!(
@@ -498,7 +733,7 @@ impl Render for TitleBar {
                             .w(second_row_side)
                             .h_full()
                             .child(spacer().width(px(27.)))
-                            .child(self.render_playback_buttons())
+                            .child(self.render_playback_buttons(cx))
                             .child(self.render_volume_controls()),
                     )
                     .child(
@@ -573,10 +808,15 @@ impl TitleBar {
             .child(self.render_traffic_light())
     }
 
-    fn render_playback_button(&self, size: impl Into<Pixels>) -> impl IntoElement {
+    fn render_playback_button(
+        &self,
+        size: impl Into<Pixels>,
+        cx: &mut ViewContext<Self>,
+    ) -> impl IntoElement {
         let size = size.into();
 
         div()
+            .id("some-playback-button")
             .relative()
             .flex_none()
             .w(size)
@@ -594,15 +834,20 @@ impl TitleBar {
                     .border_color(rgb(0x737373))
                     .bg(rgb(0xF0F0F0)),
             )
+            .active(|this| this.opacity(0.8))
+            .on_click(cx.listener(move |this, event, cx| {
+                println!("{:?}", event);
+                cx.notify();
+            }))
     }
 
-    fn render_playback_buttons(&self) -> impl IntoElement {
+    fn render_playback_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         h_stack()
             .gap(px(4.))
             .items_center()
-            .child(self.render_playback_button(px(30.)))
-            .child(self.render_playback_button(px(36.)))
-            .child(self.render_playback_button(px(30.)))
+            .child(self.render_playback_button(px(30.), cx))
+            .child(self.render_playback_button(px(36.), cx))
+            .child(self.render_playback_button(px(30.), cx))
     }
 
     fn render_volume_controls(&self) -> impl IntoElement {
@@ -748,6 +993,7 @@ impl TitleBar {
 
 struct GpuiTunes {
     state: Model<AppState>,
+    focus_handle: FocusHandle,
 }
 
 impl Render for GpuiTunes {
@@ -769,11 +1015,12 @@ impl Render for GpuiTunes {
         let window_rounding = px(10.0);
 
         div()
+            .id("gpuitunes-window")
+            .track_focus(&self.focus_handle(cx))
             .flex()
             .flex_col()
             .rounded(window_rounding)
-            .overflow_hidden()
-            .relative()
+            // .relative()
             .bg(rgb(0xFEFFFF))
             .size_full()
             .font_family("Helvetica")
@@ -783,14 +1030,24 @@ impl Render for GpuiTunes {
             .child(title_bar.clone())
             .child(library.clone())
             .child(footer.clone())
-            .child(
-                div()
-                    .absolute()
-                    .size_full()
-                    .rounded(window_rounding)
-                    .border_1()
-                    .border_color(gpui::white().opacity(0.1)),
-            )
+            .on_click(|e, _cx| {
+                println!("{:?}", e);
+            })
+        // .child(
+        //     div()
+        //         .occlude()
+        //         .absolute()
+        //         .size_full()
+        //         .rounded(window_rounding)
+        //         .border_1()
+        //         .border_color(gpui::white().opacity(0.1)),
+        // )
+    }
+}
+
+impl FocusableView for GpuiTunes {
+    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
+        self.focus_handle.clone()
     }
 }
 
@@ -803,8 +1060,12 @@ fn main() {
             },
             |cx| {
                 let state = cx.new_model(|cx| AppState::new(cx));
+                let focus_handle = cx.focus_handle();
 
-                cx.new_view(|_cx| GpuiTunes { state })
+                cx.new_view(|_cx| GpuiTunes {
+                    state,
+                    focus_handle,
+                })
             },
         )
         .unwrap();

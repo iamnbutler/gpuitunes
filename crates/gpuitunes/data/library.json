@@ -1,4 +1,46 @@
 {
+  "columns": [
+    {
+      "kind": "Playing",
+      "width": null,
+      "enabled": true
+    },
+    {
+      "kind": "Title",
+      "width": 200,
+      "enabled": true
+    },
+    {
+      "kind": "Artist",
+      "width": 150,
+      "enabled": true
+    },
+    {
+      "kind": "Album",
+      "width": 150,
+      "enabled": true
+    },
+    {
+      "kind": "Duration",
+      "width": 100,
+      "enabled": true
+    },
+    {
+      "kind": "TrackNumber",
+      "width": 50,
+      "enabled": true
+    },
+    {
+      "kind": "Kind",
+      "width": 100,
+      "enabled": false
+    },
+    {
+      "kind": "DateAdded",
+      "width": 150,
+      "enabled": true
+    }
+  ],
   "tracks": [
     {
       "title": "Intro",
@@ -164,6 +206,138 @@
       "plays": 23,
       "track_number": 15,
       "total_tracks": 15
+    },
+    {
+      "title": "Divinity",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 364,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 30,
+      "track_number": 1,
+      "total_tracks": 12
+    },
+    {
+      "title": "Sad Machine",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 350,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 35,
+      "track_number": 2,
+      "total_tracks": 12
+    },
+    {
+      "title": "Years of War",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 237,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 25,
+      "track_number": 3,
+      "total_tracks": 12
+    },
+    {
+      "title": "Flicker",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 255,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 28,
+      "track_number": 4,
+      "total_tracks": 12
+    },
+    {
+      "title": "Fresh Static Snow",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 353,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 22,
+      "track_number": 5,
+      "total_tracks": 12
+    },
+    {
+      "title": "Polygon Dust",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 210,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 20,
+      "track_number": 6,
+      "total_tracks": 12
+    },
+    {
+      "title": "Hear the Bells",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 276,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 18,
+      "track_number": 7,
+      "total_tracks": 12
+    },
+    {
+      "title": "Natural Light",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 114,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 15,
+      "track_number": 8,
+      "total_tracks": 12
+    },
+    {
+      "title": "Lionhearted",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 251,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 32,
+      "track_number": 9,
+      "total_tracks": 12
+    },
+    {
+      "title": "Sea of Voices",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 300,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 27,
+      "track_number": 10,
+      "total_tracks": 12
+    },
+    {
+      "title": "Fellow Feeling",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 329,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 24,
+      "track_number": 11,
+      "total_tracks": 12
+    },
+    {
+      "title": "Goodbye to a World",
+      "artist": "Porter Robinson",
+      "album": "Worlds",
+      "duration": 336,
+      "kind": "MPEG audio file",
+      "date_added": "2014-08-12",
+      "plays": 30,
+      "track_number": 12,
+      "total_tracks": 12
     }
   ]
 }

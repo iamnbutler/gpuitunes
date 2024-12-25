@@ -9,10 +9,14 @@ name = "gpuitunes"
 path = "src/gpuitunes.rs"
 
 [dependencies]
+anyhow = "1.0.95"
+derive_static_str = "0.1.1"
 gpui.workspace = true
 itertools.workspace = true
+rust-embed = "8.5.0"
 serde.workspace = true
 serde_json.workspace = true
 smallvec.workspace = true
 strum.workspace = true
+strum_macros = "0.26.4"
 uuid.workspace = true

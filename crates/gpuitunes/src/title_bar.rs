@@ -1,6 +1,6 @@
 use crate::{
-    assets::Icon, circle, h_stack, large_icon, small_icon, spacer, v_stack,
-    vertical_linear_gradient, AppState,
+    assets::Icon, circle, h_stack, large_icon, library::CurrentTimeChangedEvent, small_icon,
+    spacer, v_stack, vertical_linear_gradient, AppState,
 };
 use gpui::*;
 use smallvec::smallvec;
@@ -10,13 +10,20 @@ pub struct TitleBar {
 }
 
 impl TitleBar {
-    pub fn new(state: Model<AppState>) -> Self {
+    pub fn new(state: Model<AppState>, cx: &mut ViewContext<Self>) -> Self {
+        cx.subscribe(
+            &state,
+            |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
+                cx.notify();
+            },
+        )
+        .detach();
+
         TitleBar {
             state: state.clone(),
         }
     }
 }
-
 impl Render for TitleBar {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         let traffic_lights_width = px(72.);
@@ -228,68 +235,78 @@ impl TitleBar {
     }
 
     fn render_now_playing(&self, cx: &ViewContext<Self>) -> impl IntoElement {
-        let current_track = self.state.read(cx).current_track.clone();
-        let title = current_track.title().to_string();
-        let artist = current_track.artist().to_string();
+        let current_track = self.state.read(cx).current_track();
 
         let width: f32 = 350.;
         let height: f32 = 46.;
 
-        let inner_element = v_stack()
-            .flex_grow()
-            .w_full()
-            .child(
-                h_stack()
-                    .pt(px(4.))
-                    .flex_shrink_0()
-                    .w_full()
-                    .justify_center()
-                    .child(div().flex_none().text_size(px(11.)).child(title)),
-            )
-            .child(
-                h_stack()
-                    .flex_shrink_0()
-                    .w_full()
-                    .justify_center()
-                    .child(div().flex_none().text_size(px(11.)).child(artist)),
-            )
-            .child(
-                h_stack()
-                    .h(px(11.))
-                    .pb(px(2.))
-                    .gap(px(4.))
+        let inner_element = match current_track {
+            Some(track) => {
+                let title = track.title().to_string();
+                let artist = track.artist().to_string();
+
+                v_stack()
                     .flex_grow()
-                    .items_center()
+                    .w_full()
                     .child(
                         h_stack()
-                            .flex_none()
-                            .text_size(px(10.))
-                            .child(current_track.current_time.format()),
+                            .pt(px(4.))
+                            .flex_shrink_0()
+                            .w_full()
+                            .justify_center()
+                            .child(div().flex_none().text_size(px(11.)).child(title)),
                     )
                     .child(
-                        div()
-                            .mb_px()
+                        h_stack()
+                            .flex_shrink_0()
+                            .w_full()
+                            .justify_center()
+                            .child(div().flex_none().text_size(px(11.)).child(artist)),
+                    )
+                    .child(
+                        h_stack()
+                            .h(px(11.))
+                            .pb(px(2.))
+                            .gap(px(4.))
                             .flex_grow()
                             .items_center()
-                            .h(px(9.))
-                            .relative()
-                            .border_1()
-                            .border_color(rgb(0x000000))
                             .child(
-                                circle(px(5.))
-                                    .absolute()
-                                    .top(px(1.))
-                                    .left(relative(current_track.percent_complete()))
-                                    .bg(rgb(0x000000)),
+                                h_stack()
+                                    .flex_none()
+                                    .text_size(px(10.))
+                                    .child(track.current_time().format()),
+                            )
+                            .child(
+                                div()
+                                    .mb_px()
+                                    .flex_grow()
+                                    .items_center()
+                                    .h(px(9.))
+                                    .relative()
+                                    .border_1()
+                                    .border_color(rgb(0x000000))
+                                    .child(
+                                        circle(px(5.))
+                                            .absolute()
+                                            .top(px(1.))
+                                            .left(relative(track.progress()))
+                                            .bg(rgb(0x000000)),
+                                    ),
+                            )
+                            .child(
+                                h_stack()
+                                    .flex_none()
+                                    .text_size(px(10.))
+                                    .child(track.time_remaining().format()),
                             ),
                     )
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .text_size(px(10.))
-                            .child(current_track.time_remaining().format()),
-                    ),
-            );
+            }
+            None => v_stack()
+                .flex_grow()
+                .w_full()
+                .justify_center()
+                .child(div().text_size(px(11.)).child("No track playing")),
+        };
 
         h_stack()
             .rounded(px(5.0))

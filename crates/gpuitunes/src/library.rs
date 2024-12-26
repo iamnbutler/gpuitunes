@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Clone, Copy)]
-pub struct PlaybackTime(i32);
+pub struct PlaybackTime(pub i32);
 
 impl PlaybackTime {
     pub fn format(&self) -> String {
@@ -82,43 +82,64 @@ impl From<SerializableTrack> for Track {
     }
 }
 
+pub struct TrackEndedEvent;
+pub struct CurrentTimeChangedEvent;
+
 #[derive(Debug, Clone)]
 pub struct CurrentTrack {
     pub track: Track,
-    pub current_time: PlaybackTime,
+    pub is_playing: bool,
+    current_time: PlaybackTime,
 }
 
 impl CurrentTrack {
     pub fn new(track: Track) -> Self {
         CurrentTrack {
             track,
+            is_playing: false,
             current_time: PlaybackTime(0),
         }
-    }
-
-    pub fn title(&self) -> SharedString {
-        self.track.title.clone()
-    }
-
-    pub fn artist(&self) -> SharedString {
-        self.track.artist.clone()
     }
 
     pub fn album(&self) -> SharedString {
         self.track.album.clone()
     }
 
+    pub fn artist(&self) -> SharedString {
+        self.track.artist.clone()
+    }
+
+    pub fn current_time(&self) -> PlaybackTime {
+        self.current_time
+    }
+
     pub fn duration(&self) -> PlaybackTime {
         self.track.duration
     }
 
-    pub fn time_remaining(&self) -> PlaybackTime {
-        let time = self.track.duration.0 - self.current_time.0;
-        time.into()
+    pub fn progress(&self) -> f32 {
+        (self.current_time.0 as f32 / self.duration().0 as f32).clamp(0., 1.)
     }
 
-    pub fn percent_complete(&self) -> f32 {
-        (self.current_time.0 as f32 / self.track.duration.0 as f32).clamp(0.0, 1.0)
+    pub fn set_current_time(&mut self, time: PlaybackTime) {
+        self.current_time = time;
+    }
+
+    pub fn set_playing(&mut self, is_playing: bool) {
+        self.is_playing = is_playing;
+    }
+
+    pub fn time_remaining(&self) -> PlaybackTime {
+        let remaining = self.track.duration.0.clone() - self.current_time.0.clone();
+        PlaybackTime(remaining)
+    }
+
+    pub fn title(&self) -> SharedString {
+        self.track.title.clone()
+    }
+
+    pub fn track(&self) -> &Track {
+        &self.track
     }
 
     pub fn track_number(&self) -> String {
@@ -275,6 +296,14 @@ impl Library {
                 track_a.date_added.cmp(&track_b.date_added)
             }),
         }
+    }
+
+    pub fn track_list(&self) -> Vec<TrackId> {
+        self.track_order.clone()
+    }
+
+    pub fn track(&self, id: TrackId) -> Option<&Track> {
+        self.tracks.get(&id)
     }
 }
 

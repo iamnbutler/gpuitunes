@@ -1,7 +1,5 @@
-use crate::{
-    assets::Icon, circle, h_stack, large_icon, library::CurrentTimeChangedEvent, small_icon,
-    spacer, v_stack, vertical_linear_gradient, AppState,
-};
+use crate::element::*;
+use crate::{assets::Icon, AppState};
 use gpui::*;
 use smallvec::smallvec;
 
@@ -11,13 +9,13 @@ pub struct TitleBar {
 
 impl TitleBar {
     pub fn new(state: Model<AppState>, cx: &mut ViewContext<Self>) -> Self {
-        cx.subscribe(
-            &state,
-            |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
-                cx.notify();
-            },
-        )
-        .detach();
+        // cx.subscribe(
+        //     &state,
+        //     |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
+        //         cx.notify();
+        //     },
+        // )
+        // .detach();
 
         TitleBar {
             state: state.clone(),
@@ -235,107 +233,108 @@ impl TitleBar {
     }
 
     fn render_now_playing(&self, cx: &ViewContext<Self>) -> impl IntoElement {
-        let current_track = self.state.read(cx).current_track();
+        // let current_track = self.state.read(cx).current_track();
 
-        let width: f32 = 350.;
-        let height: f32 = 46.;
+        // let width: f32 = 350.;
+        // let height: f32 = 46.;
 
-        let inner_element = match current_track {
-            Some(track) => {
-                let title = track.title().to_string();
-                let artist = track.artist().to_string();
+        // let inner_element = match current_track {
+        //     Some(track) => {
+        //         let title = track.title().to_string();
+        //         let artist = track.artist().to_string();
 
-                v_stack()
-                    .flex_grow()
-                    .w_full()
-                    .child(
-                        h_stack()
-                            .pt(px(4.))
-                            .flex_shrink_0()
-                            .w_full()
-                            .justify_center()
-                            .child(div().flex_none().text_size(px(11.)).child(title)),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_shrink_0()
-                            .w_full()
-                            .justify_center()
-                            .child(div().flex_none().text_size(px(11.)).child(artist)),
-                    )
-                    .child(
-                        h_stack()
-                            .h(px(11.))
-                            .pb(px(2.))
-                            .gap(px(4.))
-                            .flex_grow()
-                            .items_center()
-                            .child(
-                                h_stack()
-                                    .flex_none()
-                                    .text_size(px(10.))
-                                    .child(track.current_time().format()),
-                            )
-                            .child(
-                                div()
-                                    .mb_px()
-                                    .flex_grow()
-                                    .items_center()
-                                    .h(px(9.))
-                                    .relative()
-                                    .border_1()
-                                    .border_color(rgb(0x000000))
-                                    .child(
-                                        circle(px(5.))
-                                            .absolute()
-                                            .top(px(1.))
-                                            .left(relative(track.progress()))
-                                            .bg(rgb(0x000000)),
-                                    ),
-                            )
-                            .child(
-                                h_stack()
-                                    .flex_none()
-                                    .text_size(px(10.))
-                                    .child(track.time_remaining().format()),
-                            ),
-                    )
-            }
-            None => v_stack()
-                .flex_grow()
-                .w_full()
-                .justify_center()
-                .child(div().text_size(px(11.)).child("No track playing")),
-        };
+        //         v_stack()
+        //             .flex_grow()
+        //             .w_full()
+        //             .child(
+        //                 h_stack()
+        //                     .pt(px(4.))
+        //                     .flex_shrink_0()
+        //                     .w_full()
+        //                     .justify_center()
+        //                     .child(div().flex_none().text_size(px(11.)).child(title)),
+        //             )
+        //             .child(
+        //                 h_stack()
+        //                     .flex_shrink_0()
+        //                     .w_full()
+        //                     .justify_center()
+        //                     .child(div().flex_none().text_size(px(11.)).child(artist)),
+        //             )
+        //             .child(
+        //                 h_stack()
+        //                     .h(px(11.))
+        //                     .pb(px(2.))
+        //                     .gap(px(4.))
+        //                     .flex_grow()
+        //                     .items_center()
+        //                     .child(
+        //                         h_stack()
+        //                             .flex_none()
+        //                             .text_size(px(10.))
+        //                             .child(track.current_time().format()),
+        //                     )
+        //                     .child(
+        //                         div()
+        //                             .mb_px()
+        //                             .flex_grow()
+        //                             .items_center()
+        //                             .h(px(9.))
+        //                             .relative()
+        //                             .border_1()
+        //                             .border_color(rgb(0x000000))
+        //                             .child(
+        //                                 circle(px(5.))
+        //                                     .absolute()
+        //                                     .top(px(1.))
+        //                                     .left(relative(track.progress()))
+        //                                     .bg(rgb(0x000000)),
+        //                             ),
+        //                     )
+        //                     .child(
+        //                         h_stack()
+        //                             .flex_none()
+        //                             .text_size(px(10.))
+        //                             .child(track.time_remaining().format()),
+        //                     ),
+        //             )
+        //     }
+        //     None => v_stack()
+        //         .flex_grow()
+        //         .w_full()
+        //         .justify_center()
+        //         .child(div().text_size(px(11.)).child("No track playing")),
+        // };
 
-        h_stack()
-            .rounded(px(5.0))
-            .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
-            .px_px()
-            .flex_grow()
-            .h(px(height))
-            .w(px(width))
-            .child(
-                h_stack()
-                    .w(px(width - 2.))
-                    .h(px(height - 2.))
-                    .px_px()
-                    .flex_grow()
-                    .rounded(px(4.0))
-                    .bg(vertical_linear_gradient(rgb(0x969988), rgb(0xC1C4AF)))
-                    .child(
-                        h_stack()
-                            .flex_grow()
-                            .w(px(width - 4.))
-                            .h(px(height - 4.))
-                            .rounded(px(3.0))
-                            .bg(rgb(0xD6DABF))
-                            .gap(px(8.))
-                            .child(div().size(px(11.)).bg(gpui::red()))
-                            .child(inner_element)
-                            .child(div().size(px(11.)).bg(gpui::red())),
-                    ),
-            )
+        // h_stack()
+        //     .rounded(px(5.0))
+        //     .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
+        //     .px_px()
+        //     .flex_grow()
+        //     .h(px(height))
+        //     .w(px(width))
+        //     .child(
+        //         h_stack()
+        //             .w(px(width - 2.))
+        //             .h(px(height - 2.))
+        //             .px_px()
+        //             .flex_grow()
+        //             .rounded(px(4.0))
+        //             .bg(vertical_linear_gradient(rgb(0x969988), rgb(0xC1C4AF)))
+        //             .child(
+        //                 h_stack()
+        //                     .flex_grow()
+        //                     .w(px(width - 4.))
+        //                     .h(px(height - 4.))
+        //                     .rounded(px(3.0))
+        //                     .bg(rgb(0xD6DABF))
+        //                     .gap(px(8.))
+        //                     .child(div().size(px(11.)).bg(gpui::red()))
+        //                     .child(inner_element)
+        //                     .child(div().size(px(11.)).bg(gpui::red())),
+        //             ),
+        //     )
+        div()
     }
 
     fn render_search(&self) -> impl IntoElement {

@@ -14,7 +14,7 @@ pub struct AppState {
 pub struct UpdateTriggered;
 
 impl AppState {
-    fn new(cx: &mut AppContext) -> Self {
+    pub fn new(cx: &mut AppContext) -> Self {
         AppState {
             pending_update: None,
         }
@@ -475,7 +475,24 @@ impl FocusableView for AppWindow {
 
 impl Render for AppWindow {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        // This should be more like 4.0, but later macOS versions have
+        // a higher default window border radius
+        let window_rounding = px(10.0);
+
         div()
+            .id("gpuitunes-window")
+            .track_focus(&self.focus_handle(cx))
+            .flex()
+            .flex_col()
+            .rounded(window_rounding)
+            // .relative()
+            .bg(rgb(0xFEFFFF))
+            .size_full()
+            .font_family("Helvetica")
+            .line_height(px(14.))
+            .text_color(rgb(0x0F1219))
+            .text_size(px(14.))
+            .child("App Window")
     }
 }
 

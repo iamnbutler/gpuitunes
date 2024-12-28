@@ -12,6 +12,7 @@ use library::{
 };
 use prelude::FluentBuilder as _;
 
+mod app;
 mod assets;
 mod library;
 mod title_bar;
@@ -449,19 +450,19 @@ impl Render for LibraryContent {
     }
 }
 
-struct Footer {
+struct StatusBar {
     state: Model<AppState>,
 }
 
-impl Footer {
+impl StatusBar {
     fn new(state: Model<AppState>) -> Self {
-        Footer {
+        StatusBar {
             state: state.clone(),
         }
     }
 }
 
-impl Render for Footer {
+impl Render for StatusBar {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         div()
             .flex()
@@ -517,7 +518,7 @@ impl Render for GpuiTunes {
             state: self.state.clone(),
         });
 
-        let footer = cx.new_view(|_| Footer {
+        let footer = cx.new_view(|_| StatusBar {
             state: self.state.clone(),
         });
 

@@ -5,6 +5,8 @@ use library::{Library, NowPlaying};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
+use crate::title_bar::TitleBar;
+
 const UPDATE_INTERVAL: Duration = Duration::from_millis(250);
 
 pub struct AppState {
@@ -216,6 +218,9 @@ impl Render for AppWindow {
         // This should be more like 4.0, but later macOS versions have
         // a higher default window border radius
         let window_rounding = px(10.0);
+        let state = cx.new_model(|cx| AppState::new(cx));
+
+        let title_bar = cx.new_view(|cx| TitleBar::new(state.clone(), cx));
 
         div()
             .id("gpuitunes-window")
@@ -230,7 +235,7 @@ impl Render for AppWindow {
             .line_height(px(14.))
             .text_color(rgb(0x0F1219))
             .text_size(px(14.))
-            .child("App Window")
+            .child(title_bar)
     }
 }
 

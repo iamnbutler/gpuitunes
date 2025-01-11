@@ -1,7 +1,98 @@
-use crate::element::*;
 use crate::{assets::Icon, AppState};
+use crate::{element::*, FullScreen, Minimize, Quit};
 use gpui::*;
 use smallvec::smallvec;
+
+#[derive(Clone, Copy, Debug)]
+enum WindowButtonType {
+    Close,
+    Minimize,
+    FullScreen,
+}
+
+impl WindowButtonType {
+    fn bg(&self) -> Background {
+        match self {
+            WindowButtonType::Close => vertical_linear_gradient(rgb(0xC45554), rgb(0xFEB2A4)),
+            WindowButtonType::Minimize => vertical_linear_gradient(rgb(0xEDB353), rgb(0xFEEA74)),
+            WindowButtonType::FullScreen => vertical_linear_gradient(rgb(0x83A942), rgb(0xD4F596)),
+        }
+    }
+    fn id(&self) -> ElementId {
+        match self {
+            WindowButtonType::Close => ElementId::Name("close".into()),
+            WindowButtonType::Minimize => ElementId::Name("minimize".into()),
+            WindowButtonType::FullScreen => ElementId::Name("fullscreen".into()),
+        }
+    }
+}
+
+#[derive(IntoElement)]
+struct TrafficLight {
+    button_type: WindowButtonType,
+}
+
+impl TrafficLight {
+    fn new(button_type: WindowButtonType, _cx: &mut WindowContext) -> Self {
+        TrafficLight { button_type }
+    }
+
+    fn close(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::Close, cx)
+    }
+
+    fn minimize(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::Minimize, cx)
+    }
+
+    fn fullscreen(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::FullScreen, cx)
+    }
+}
+
+impl RenderOnce for TrafficLight {
+    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+        let button_type = self.button_type;
+
+        circle(px(14.))
+            .id(button_type.id())
+            .mt(px(4.))
+            .mb(px(2.))
+            .rounded_full()
+            .overflow_hidden()
+            .p_px()
+            .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
+            .shadow(smallvec![BoxShadow {
+                color: hsla(0.0, 1., 1., 0.5),
+                offset: point(px(0.), px(1.)),
+                blur_radius: px(0.),
+                spread_radius: px(0.),
+            }])
+            .on_click(move |_, cx| match button_type {
+                WindowButtonType::Close => cx.dispatch_action(Box::new(Quit)),
+                WindowButtonType::Minimize => cx.dispatch_action(Box::new(Minimize)),
+                WindowButtonType::FullScreen => cx.dispatch_action(Box::new(FullScreen)),
+            })
+            .child(
+                circle(px(12.))
+                    .overflow_hidden()
+                    .relative()
+                    .bg(vertical_linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
+                    .group_hover("title-bar", |this| this.bg(button_type.bg()))
+                    .child(
+                        div()
+                            .top_px()
+                            .left(px(3.))
+                            .absolute()
+                            .overflow_hidden()
+                            .w(px(6.))
+                            .h(px(3.))
+                            .rounded_t_full()
+                            .bg(vertical_linear_gradient(rgb(0xFFFFFF), rgb(0x9EA3A9))),
+                    ),
+            )
+    }
+}
 
 pub struct TitleBar {
     state: Model<AppState>,
@@ -28,6 +119,7 @@ impl Render for TitleBar {
         let second_row_side = px(250.);
 
         v_stack()
+            .group("title-bar")
             .w_full()
             .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
             .border_b_1()
@@ -39,7 +131,7 @@ impl Render for TitleBar {
                     .flex_none()
                     .w_full()
                     .justify_between()
-                    .child(self.render_traffic_lights(traffic_lights_width))
+                    .child(self.render_traffic_lights(traffic_lights_width, cx))
                     .child(div().child("gpuiTunes"))
                     .child(spacer().width(traffic_lights_width)),
             )
@@ -92,41 +184,11 @@ impl Render for TitleBar {
 }
 
 impl TitleBar {
-    fn render_traffic_light(&self) -> impl IntoElement {
-        circle(px(14.))
-            .mt(px(4.))
-            .mb(px(2.))
-            .rounded_full()
-            .overflow_hidden()
-            .p_px()
-            // C5C5C5, BEBEBE, B8B6B7, AFAFAF, A7A7A7, 9F9DA0, 969696
-            .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
-            .shadow(smallvec![BoxShadow {
-                color: hsla(0.0, 1., 1., 0.36),
-                offset: point(px(0.), px(1.)),
-                blur_radius: px(1.),
-                spread_radius: px(1.),
-            }])
-            .child(
-                circle(px(12.))
-                    .overflow_hidden()
-                    .relative()
-                    .bg(vertical_linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
-                    .child(
-                        div()
-                            .top_px()
-                            .left(px(3.))
-                            .absolute()
-                            .overflow_hidden()
-                            .w(px(6.))
-                            .h(px(3.))
-                            .rounded_t_full()
-                            .bg(vertical_linear_gradient(rgb(0xFFFFFF), rgb(0x9EA3A9))),
-                    ),
-            )
-    }
-
-    fn render_traffic_lights(&self, width: impl Into<Length>) -> impl IntoElement {
+    fn render_traffic_lights(
+        &self,
+        width: impl Into<Length>,
+        cx: &mut WindowContext,
+    ) -> impl IntoElement {
         h_stack()
             .id("traffic-lights")
             .group("traffic-lights")
@@ -134,9 +196,9 @@ impl TitleBar {
             .w(width.into())
             .justify_center()
             .border_color(gpui::white().opacity(0.1))
-            .child(self.render_traffic_light())
-            .child(self.render_traffic_light())
-            .child(self.render_traffic_light())
+            .child(TrafficLight::close(cx))
+            .child(TrafficLight::minimize(cx))
+            .child(TrafficLight::fullscreen(cx))
     }
 
     fn render_playback_button(

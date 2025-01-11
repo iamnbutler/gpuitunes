@@ -12,7 +12,7 @@ mod assets;
 mod element;
 mod title_bar;
 
-actions!(gpuitunes, [Quit]);
+actions!(gpuitunes, [Quit, Minimize, FullScreen]);
 
 fn main() {
     App::new().with_assets(Assets).run(|cx: &mut AppContext| {

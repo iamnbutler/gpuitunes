@@ -2,14 +2,14 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use app::{AppState, AppWindow, Library};
+use app::{AppState, AppWindow};
 use assets::Assets;
 use gpui::*;
+use library::Library;
 
 mod app;
 mod assets;
 mod element;
-mod library;
 mod title_bar;
 
 fn main() {
@@ -22,11 +22,7 @@ fn main() {
             |cx| {
                 let state = Arc::new(AppState::new(cx));
 
-                let library = Library {
-                    tracks: HashMap::new(),
-                    track_order: Vec::new(),
-                    columns: Vec::new(),
-                };
+                let library = Library::default();
 
                 let library = cx.new_model(|_| library);
 

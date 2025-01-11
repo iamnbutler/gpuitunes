@@ -1,15 +1,14 @@
 [package]
-name = "gpuitunes"
+name = "library"
 version = "0.1.0"
 edition = "2021"
 publish = false
 
-[[bin]]
-name = "gpuitunes"
-path = "src/gpuitunes.rs"
+[lib]
+name = "library"
+path = "src/lib.rs"
 
 [dependencies]
-library.workspace = true
 anyhow = "1.0.95"
 derive_static_str = "0.1.1"
 gpui.workspace = true

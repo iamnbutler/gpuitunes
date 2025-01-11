@@ -8,7 +8,7 @@ pub struct TitleBar {
 }
 
 impl TitleBar {
-    pub fn new(state: Model<AppState>, cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(state: Model<AppState>, _cx: &mut ViewContext<Self>) -> Self {
         // cx.subscribe(
         //     &state,
         //     |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
@@ -232,7 +232,7 @@ impl TitleBar {
             .child(small_icon(Icon::VolumeHigh))
     }
 
-    fn render_now_playing(&self, cx: &ViewContext<Self>) -> impl IntoElement {
+    fn render_now_playing(&self, _cx: &ViewContext<Self>) -> impl IntoElement {
         // let current_track = self.state.read(cx).current_track();
 
         // let width: f32 = 350.;

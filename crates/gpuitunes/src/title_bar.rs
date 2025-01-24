@@ -1,112 +1,92 @@
-use crate::{
-    assets::Icon, circle, h_stack, large_icon, small_icon, spacer, v_stack,
-    vertical_linear_gradient, AppState,
-};
+use crate::{assets::Icon, AppState};
+use crate::{element::*, FullScreen, Minimize, Quit};
 use gpui::*;
 use smallvec::smallvec;
 
-pub struct TitleBar {
-    state: Model<AppState>,
+// TODO: Move to playback
+actions!(
+    playback,
+    [
+        SkipPrev,
+        SkipNext,
+        TogglePlayback,
+        Play,
+        Pause,
+        Restart,
+        VolumeIncrease,
+        VolumeDecrease
+    ]
+);
+
+#[derive(Clone, Copy, Debug)]
+enum WindowButtonType {
+    Close,
+    Minimize,
+    FullScreen,
 }
 
-impl TitleBar {
-    pub fn new(state: Model<AppState>) -> Self {
-        TitleBar {
-            state: state.clone(),
+impl WindowButtonType {
+    fn bg(&self) -> Background {
+        match self {
+            WindowButtonType::Close => vertical_linear_gradient(rgb(0xC45554), rgb(0xFEB2A4)),
+            WindowButtonType::Minimize => vertical_linear_gradient(rgb(0xEDB353), rgb(0xFEEA74)),
+            WindowButtonType::FullScreen => vertical_linear_gradient(rgb(0x83A942), rgb(0xD4F596)),
+        }
+    }
+    fn id(&self) -> ElementId {
+        match self {
+            WindowButtonType::Close => ElementId::Name("close".into()),
+            WindowButtonType::Minimize => ElementId::Name("minimize".into()),
+            WindowButtonType::FullScreen => ElementId::Name("fullscreen".into()),
         }
     }
 }
 
-impl Render for TitleBar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let traffic_lights_width = px(72.);
-        let second_row_side = px(250.);
+#[derive(IntoElement)]
+struct TrafficLight {
+    button_type: WindowButtonType,
+}
 
-        v_stack()
-            .w_full()
-            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
-            .border_b_1()
-            .border_color(rgb(0x414141))
-            .child(
-                h_stack()
-                    .id("title-bar")
-                    .h(px(20.))
-                    .flex_none()
-                    .w_full()
-                    .justify_between()
-                    .child(self.render_traffic_lights(traffic_lights_width))
-                    .child(div().child("gpuiTunes"))
-                    .child(spacer().width(traffic_lights_width)),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_start()
-                    .h(px(54.))
-                    .gap(px(10.))
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .justify_start()
-                            .w(second_row_side)
-                            .child(spacer().width(px(27.)))
-                            .child(self.render_playback_buttons(cx))
-                            .child(self.render_volume_controls()),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_1()
-                            .flex_shrink_0()
-                            .w_full()
-                            .justify_center()
-                            .child(self.render_now_playing(cx)),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .h_full()
-                            .justify_end()
-                            .w(second_row_side)
-                            // .child(div().flex_1().child(""))
-                            .child(
-                                v_stack()
-                                    .h(px(46.))
-                                    .child(h_stack().h(px(32.)).child(self.render_search())),
-                            )
-                            .child(
-                                h_stack()
-                                    .h(px(46.))
-                                    .w(px(38.))
-                                    .justify_center()
-                                    .flex_none()
-                                    .child(self.render_browse()),
-                            ),
-                    ),
-            )
+impl TrafficLight {
+    fn new(button_type: WindowButtonType, _cx: &mut WindowContext) -> Self {
+        TrafficLight { button_type }
+    }
+
+    fn close(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::Close, cx)
+    }
+
+    fn minimize(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::Minimize, cx)
+    }
+
+    fn fullscreen(cx: &mut WindowContext) -> Self {
+        TrafficLight::new(WindowButtonType::FullScreen, cx)
     }
 }
 
-impl TitleBar {
-    fn render_traffic_light(&self) -> impl IntoElement {
+impl RenderOnce for TrafficLight {
+    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+        let button_type = self.button_type;
+
         circle(px(14.))
-            .mt(px(4.))
-            .mb(px(2.))
+            .id(button_type.id())
             .rounded_full()
             .overflow_hidden()
             .p_px()
-            // C5C5C5, BEBEBE, B8B6B7, AFAFAF, A7A7A7, 9F9DA0, 969696
             .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
-            .shadow(smallvec![BoxShadow {
-                color: hsla(0.0, 1., 1., 0.36),
-                offset: point(px(0.), px(1.)),
-                blur_radius: px(1.),
-                spread_radius: px(1.),
-            }])
+            .shadow(highlight_ring_shadow())
+            .on_click(move |_, cx| match button_type {
+                WindowButtonType::Close => cx.dispatch_action(Box::new(Quit)),
+                WindowButtonType::Minimize => cx.dispatch_action(Box::new(Minimize)),
+                WindowButtonType::FullScreen => cx.dispatch_action(Box::new(FullScreen)),
+            })
             .child(
                 circle(px(12.))
                     .overflow_hidden()
                     .relative()
                     .bg(vertical_linear_gradient(rgb(0x7A838C), rgb(0xF3FBFE)))
+                    .group_hover("title-bar", |this| this.bg(button_type.bg()))
                     .child(
                         div()
                             .top_px()
@@ -120,18 +100,42 @@ impl TitleBar {
                     ),
             )
     }
+}
 
-    fn render_traffic_lights(&self, width: impl Into<Length>) -> impl IntoElement {
+pub struct TitleBar {
+    state: Model<AppState>,
+}
+
+impl TitleBar {
+    pub fn new(state: Model<AppState>, _cx: &mut ViewContext<Self>) -> Self {
+        // cx.subscribe(
+        //     &state,
+        //     |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
+        //         cx.notify();
+        //     },
+        // )
+        // .detach();
+
+        TitleBar {
+            state: state.clone(),
+        }
+    }
+}
+
+impl TitleBar {
+    fn render_traffic_lights(&self, cx: &mut WindowContext) -> impl IntoElement {
         h_stack()
             .id("traffic-lights")
             .group("traffic-lights")
-            .gap(px(6.))
-            .w(width.into())
+            .absolute()
+            .top(px(5.))
+            .left(px(8.))
+            .gap(px(7.))
             .justify_center()
             .border_color(gpui::white().opacity(0.1))
-            .child(self.render_traffic_light())
-            .child(self.render_traffic_light())
-            .child(self.render_traffic_light())
+            .child(TrafficLight::close(cx))
+            .child(TrafficLight::minimize(cx))
+            .child(TrafficLight::fullscreen(cx))
     }
 
     fn render_playback_button(
@@ -147,14 +151,9 @@ impl TitleBar {
             .relative()
             .flex_none()
             .w(size)
-            .h(size + px(1.))
-            .child(
-                circle(size)
-                    .absolute()
-                    .bottom(px(0.))
-                    .left(px(0.))
-                    .bg(vertical_linear_gradient(rgb(0x5E5E5E), rgb(0xD5D3D6))),
-            )
+            .h(size)
+            .rounded_full()
+            .shadow(highlight_ring_shadow())
             .child(
                 circle(size)
                     .flex()
@@ -179,11 +178,12 @@ impl TitleBar {
 
     fn render_playback_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         h_stack()
+            .top(px(5.))
             .gap(px(4.))
             .items_center()
-            .child(self.render_playback_button(px(30.), Icon::Previous, cx))
-            .child(self.render_playback_button(px(36.), Icon::Pause, cx))
-            .child(self.render_playback_button(px(30.), Icon::Next, cx))
+            .child(self.render_playback_button(px(31.), Icon::Previous, cx))
+            .child(self.render_playback_button(px(37.), Icon::Pause, cx))
+            .child(self.render_playback_button(px(31.), Icon::Next, cx))
     }
 
     fn render_volume_controls(&self) -> impl IntoElement {
@@ -227,98 +227,109 @@ impl TitleBar {
             .child(small_icon(Icon::VolumeHigh))
     }
 
-    fn render_now_playing(&self, cx: &ViewContext<Self>) -> impl IntoElement {
-        let current_track = self.state.read(cx).current_track.clone();
-        let title = current_track.title().to_string();
-        let artist = current_track.artist().to_string();
+    fn render_now_playing(&self, _cx: &ViewContext<Self>) -> impl IntoElement {
+        // let current_track = self.state.read(cx).current_track();
 
-        let width: f32 = 350.;
-        let height: f32 = 46.;
+        // let width: f32 = 350.;
+        // let height: f32 = 46.;
 
-        let inner_element = v_stack()
-            .flex_grow()
-            .w_full()
-            .child(
-                h_stack()
-                    .pt(px(4.))
-                    .flex_shrink_0()
-                    .w_full()
-                    .justify_center()
-                    .child(div().flex_none().text_size(px(11.)).child(title)),
-            )
-            .child(
-                h_stack()
-                    .flex_shrink_0()
-                    .w_full()
-                    .justify_center()
-                    .child(div().flex_none().text_size(px(11.)).child(artist)),
-            )
-            .child(
-                h_stack()
-                    .h(px(11.))
-                    .pb(px(2.))
-                    .gap(px(4.))
-                    .flex_grow()
-                    .items_center()
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .text_size(px(10.))
-                            .child(current_track.current_time.format()),
-                    )
-                    .child(
-                        div()
-                            .mb_px()
-                            .flex_grow()
-                            .items_center()
-                            .h(px(9.))
-                            .relative()
-                            .border_1()
-                            .border_color(rgb(0x000000))
-                            .child(
-                                circle(px(5.))
-                                    .absolute()
-                                    .top(px(1.))
-                                    .left(relative(current_track.percent_complete()))
-                                    .bg(rgb(0x000000)),
-                            ),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .text_size(px(10.))
-                            .child(current_track.time_remaining().format()),
-                    ),
-            );
+        // let inner_element = match current_track {
+        //     Some(track) => {
+        //         let title = track.title().to_string();
+        //         let artist = track.artist().to_string();
 
-        h_stack()
-            .rounded(px(5.0))
-            .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
-            .px_px()
-            .flex_grow()
-            .h(px(height))
-            .w(px(width))
-            .child(
-                h_stack()
-                    .w(px(width - 2.))
-                    .h(px(height - 2.))
-                    .px_px()
-                    .flex_grow()
-                    .rounded(px(4.0))
-                    .bg(vertical_linear_gradient(rgb(0x969988), rgb(0xC1C4AF)))
-                    .child(
-                        h_stack()
-                            .flex_grow()
-                            .w(px(width - 4.))
-                            .h(px(height - 4.))
-                            .rounded(px(3.0))
-                            .bg(rgb(0xD6DABF))
-                            .gap(px(8.))
-                            .child(div().size(px(11.)).bg(gpui::red()))
-                            .child(inner_element)
-                            .child(div().size(px(11.)).bg(gpui::red())),
-                    ),
-            )
+        //         v_stack()
+        //             .flex_grow()
+        //             .w_full()
+        //             .child(
+        //                 h_stack()
+        //                     .pt(px(4.))
+        //                     .flex_shrink_0()
+        //                     .w_full()
+        //                     .justify_center()
+        //                     .child(div().flex_none().text_size(px(11.)).child(title)),
+        //             )
+        //             .child(
+        //                 h_stack()
+        //                     .flex_shrink_0()
+        //                     .w_full()
+        //                     .justify_center()
+        //                     .child(div().flex_none().text_size(px(11.)).child(artist)),
+        //             )
+        //             .child(
+        //                 h_stack()
+        //                     .h(px(11.))
+        //                     .pb(px(2.))
+        //                     .gap(px(4.))
+        //                     .flex_grow()
+        //                     .items_center()
+        //                     .child(
+        //                         h_stack()
+        //                             .flex_none()
+        //                             .text_size(px(10.))
+        //                             .child(track.current_time().format()),
+        //                     )
+        //                     .child(
+        //                         div()
+        //                             .mb_px()
+        //                             .flex_grow()
+        //                             .items_center()
+        //                             .h(px(9.))
+        //                             .relative()
+        //                             .border_1()
+        //                             .border_color(rgb(0x000000))
+        //                             .child(
+        //                                 circle(px(5.))
+        //                                     .absolute()
+        //                                     .top(px(1.))
+        //                                     .left(relative(track.progress()))
+        //                                     .bg(rgb(0x000000)),
+        //                             ),
+        //                     )
+        //                     .child(
+        //                         h_stack()
+        //                             .flex_none()
+        //                             .text_size(px(10.))
+        //                             .child(track.time_remaining().format()),
+        //                     ),
+        //             )
+        //     }
+        //     None => v_stack()
+        //         .flex_grow()
+        //         .w_full()
+        //         .justify_center()
+        //         .child(div().text_size(px(11.)).child("No track playing")),
+        // };
+
+        // h_stack()
+        //     .rounded(px(5.0))
+        //     .bg(vertical_linear_gradient(rgb(0x56574F), rgb(0xE1E1E1)))
+        //     .px_px()
+        //     .flex_grow()
+        //     .h(px(height))
+        //     .w(px(width))
+        //     .child(
+        //         h_stack()
+        //             .w(px(width - 2.))
+        //             .h(px(height - 2.))
+        //             .px_px()
+        //             .flex_grow()
+        //             .rounded(px(4.0))
+        //             .bg(vertical_linear_gradient(rgb(0x969988), rgb(0xC1C4AF)))
+        //             .child(
+        //                 h_stack()
+        //                     .flex_grow()
+        //                     .w(px(width - 4.))
+        //                     .h(px(height - 4.))
+        //                     .rounded(px(3.0))
+        //                     .bg(rgb(0xD6DABF))
+        //                     .gap(px(8.))
+        //                     .child(div().size(px(11.)).bg(gpui::red()))
+        //                     .child(inner_element)
+        //                     .child(div().size(px(11.)).bg(gpui::red())),
+        //             ),
+        //     )
+        div()
     }
 
     fn render_search(&self) -> impl IntoElement {
@@ -428,5 +439,86 @@ impl TitleBar {
                     ),
             )
             .child(div().mt(px(3.)).text_size(px(11.)).child("Browse"))
+    }
+}
+
+impl Render for TitleBar {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let second_row_side = px(250.);
+
+        v_stack()
+            .group("title-bar")
+            .relative()
+            .w_full()
+            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+            .border_b_1()
+            .border_color(rgb(0x414141))
+            // TODO: Should be able to drag the app from the whole title bar
+            .child(self.render_traffic_lights(cx))
+            .child(
+                h_stack()
+                    .id("title-bar")
+                    .h(px(21.))
+                    .relative()
+                    .w_full()
+                    .flex_none()
+                    .child(div().flex_1())
+                    .child(
+                        div()
+                            .flex()
+                            .flex_none()
+                            .top(px(1.))
+                            .left(px(-21.))
+                            .text_size(px(13.))
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(div().text_color(rgb(0x888888)).child("gpu"))
+                            .child(div().child("iTunes")),
+                    )
+                    .child(div().flex_1())
+                    .justify_between(),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_start()
+                    .h(px(54.))
+                    .child(
+                        h_stack()
+                            .relative()
+                            .flex_none()
+                            .justify_start()
+                            .child(spacer().width(px(28.)))
+                            .child(self.render_playback_buttons(cx))
+                            .child(self.render_volume_controls()),
+                    )
+                    .child(
+                        h_stack()
+                            .flex_1()
+                            .flex_shrink_0()
+                            .w_full()
+                            .justify_center()
+                            .child(self.render_now_playing(cx)),
+                    )
+                    .child(
+                        h_stack()
+                            .flex_none()
+                            .h_full()
+                            .justify_end()
+                            // .child(div().flex_1().child(""))
+                            .child(
+                                v_stack()
+                                    .h(px(46.))
+                                    .child(h_stack().h(px(32.)).child(self.render_search())),
+                            )
+                            .child(
+                                h_stack()
+                                    .h(px(46.))
+                                    .w(px(38.))
+                                    .justify_center()
+                                    .flex_none()
+                                    .child(self.render_browse()),
+                            ),
+                    ),
+            )
     }
 }

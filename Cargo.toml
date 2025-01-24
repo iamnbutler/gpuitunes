@@ -1,10 +1,14 @@
 [workspace]
-members = ["crates/gpuitunes"]
-default-members = ["crates/gpuitunes"]
+members = [
+"crates/gpuitunes",
+"crates/library"
+]
+default-members = ["crates/gpuitunes", "crates/library"]
 resolver = "2"
 
 [workspace.dependencies]
 gpuitunes = { path = "crates/gpuitunes" }
+library = { path = "crates/library" }
 
 gpui = { git = "https://github.com/zed-industries/zed" }
 # smallvec is included here for convenience, it is used by gpui when creating
@@ -16,4 +20,4 @@ itertools = "0.13.0"
 serde = { version = "1.0.216", features = ["derive"] }
 serde_json = "1.0.134"
 strum = "0.26.3"
-uuid = { version = "1.11.0", features = ["v4", "serde"]}
+uuid = { version = "1.11.0", features = ["v4", "serde"] }

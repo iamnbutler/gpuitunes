@@ -1,5 +1,6 @@
 use gpui::prelude::FluentBuilder as _;
 use gpui::*;
+use smallvec::{smallvec, SmallVec};
 
 use crate::assets::Icon;
 
@@ -9,6 +10,15 @@ pub fn h_stack() -> Div {
 
 pub fn v_stack() -> Div {
     div().flex().flex_col()
+}
+
+pub fn highlight_ring_shadow() -> SmallVec<[BoxShadow; 2]> {
+    smallvec![BoxShadow {
+        color: hsla(0.0, 1., 1., 0.5),
+        offset: point(px(0.), px(1.)),
+        blur_radius: px(0.),
+        spread_radius: px(0.),
+    }]
 }
 
 #[derive(IntoElement)]

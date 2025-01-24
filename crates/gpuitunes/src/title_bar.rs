@@ -75,12 +75,7 @@ impl RenderOnce for TrafficLight {
             .overflow_hidden()
             .p_px()
             .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
-            .shadow(smallvec![BoxShadow {
-                color: hsla(0.0, 1., 1., 0.5),
-                offset: point(px(0.), px(1.)),
-                blur_radius: px(0.),
-                spread_radius: px(0.),
-            }])
+            .shadow(highlight_ring_shadow())
             .on_click(move |_, cx| match button_type {
                 WindowButtonType::Close => cx.dispatch_action(Box::new(Quit)),
                 WindowButtonType::Minimize => cx.dispatch_action(Box::new(Minimize)),
@@ -156,14 +151,9 @@ impl TitleBar {
             .relative()
             .flex_none()
             .w(size)
-            .h(size + px(1.))
-            .child(
-                circle(size)
-                    .absolute()
-                    .bottom(px(0.))
-                    .left(px(0.))
-                    .bg(vertical_linear_gradient(rgb(0x5E5E5E), rgb(0xD5D3D6))),
-            )
+            .h(size)
+            .rounded_full()
+            .shadow(highlight_ring_shadow())
             .child(
                 circle(size)
                     .flex()

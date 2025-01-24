@@ -188,11 +188,12 @@ impl TitleBar {
 
     fn render_playback_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
         h_stack()
+            .top(px(5.))
             .gap(px(4.))
             .items_center()
-            .child(self.render_playback_button(px(30.), Icon::Previous, cx))
-            .child(self.render_playback_button(px(36.), Icon::Pause, cx))
-            .child(self.render_playback_button(px(30.), Icon::Next, cx))
+            .child(self.render_playback_button(px(31.), Icon::Previous, cx))
+            .child(self.render_playback_button(px(37.), Icon::Pause, cx))
+            .child(self.render_playback_button(px(31.), Icon::Next, cx))
     }
 
     fn render_volume_controls(&self) -> impl IntoElement {
@@ -467,24 +468,36 @@ impl Render for TitleBar {
             .child(
                 h_stack()
                     .id("title-bar")
-                    .h(px(20.))
-                    .flex_none()
+                    .h(px(21.))
+                    .relative()
                     .w_full()
-                    // .child(div().child("gpuiTunes"))
-                    .justify_between(), // .child(spacer().width(traffic_lights_width)),
+                    .flex_none()
+                    .child(div().flex_1())
+                    .child(
+                        div()
+                            .flex()
+                            .flex_none()
+                            .top(px(1.))
+                            .left(px(-21.))
+                            .text_size(px(13.))
+                            .font_weight(FontWeight::MEDIUM)
+                            .child(div().text_color(rgb(0x888888)).child("gpu"))
+                            .child(div().child("iTunes")),
+                    )
+                    .child(div().flex_1())
+                    .justify_between(),
             )
             .child(
                 div()
                     .flex()
                     .items_start()
                     .h(px(54.))
-                    .gap(px(10.))
                     .child(
                         h_stack()
+                            .relative()
                             .flex_none()
                             .justify_start()
-                            .w(second_row_side)
-                            .child(spacer().width(px(27.)))
+                            .child(spacer().width(px(28.)))
                             .child(self.render_playback_buttons(cx))
                             .child(self.render_volume_controls()),
                     )
@@ -501,7 +514,6 @@ impl Render for TitleBar {
                             .flex_none()
                             .h_full()
                             .justify_end()
-                            .w(second_row_side)
                             // .child(div().flex_1().child(""))
                             .child(
                                 v_stack()

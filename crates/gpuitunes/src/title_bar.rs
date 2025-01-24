@@ -3,6 +3,21 @@ use crate::{element::*, FullScreen, Minimize, Quit};
 use gpui::*;
 use smallvec::smallvec;
 
+// TODO: Move to playback
+actions!(
+    playback,
+    [
+        SkipPrev,
+        SkipNext,
+        TogglePlayback,
+        Play,
+        Pause,
+        Restart,
+        VolumeIncrease,
+        VolumeDecrease
+    ]
+);
+
 #[derive(Clone, Copy, Debug)]
 enum WindowButtonType {
     Close,
@@ -56,8 +71,6 @@ impl RenderOnce for TrafficLight {
 
         circle(px(14.))
             .id(button_type.id())
-            .mt(px(4.))
-            .mb(px(2.))
             .rounded_full()
             .overflow_hidden()
             .p_px()
@@ -113,87 +126,16 @@ impl TitleBar {
         }
     }
 }
-impl Render for TitleBar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let traffic_lights_width = px(72.);
-        let second_row_side = px(250.);
-
-        v_stack()
-            .group("title-bar")
-            .w_full()
-            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
-            .border_b_1()
-            .border_color(rgb(0x414141))
-            .child(
-                h_stack()
-                    .id("title-bar")
-                    .h(px(20.))
-                    .flex_none()
-                    .w_full()
-                    .justify_between()
-                    .child(self.render_traffic_lights(traffic_lights_width, cx))
-                    .child(div().child("gpuiTunes"))
-                    .child(spacer().width(traffic_lights_width)),
-            )
-            .child(
-                div()
-                    .flex()
-                    .items_start()
-                    .h(px(54.))
-                    .gap(px(10.))
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .justify_start()
-                            .w(second_row_side)
-                            .child(spacer().width(px(27.)))
-                            .child(self.render_playback_buttons(cx))
-                            .child(self.render_volume_controls()),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_1()
-                            .flex_shrink_0()
-                            .w_full()
-                            .justify_center()
-                            .child(self.render_now_playing(cx)),
-                    )
-                    .child(
-                        h_stack()
-                            .flex_none()
-                            .h_full()
-                            .justify_end()
-                            .w(second_row_side)
-                            // .child(div().flex_1().child(""))
-                            .child(
-                                v_stack()
-                                    .h(px(46.))
-                                    .child(h_stack().h(px(32.)).child(self.render_search())),
-                            )
-                            .child(
-                                h_stack()
-                                    .h(px(46.))
-                                    .w(px(38.))
-                                    .justify_center()
-                                    .flex_none()
-                                    .child(self.render_browse()),
-                            ),
-                    ),
-            )
-    }
-}
 
 impl TitleBar {
-    fn render_traffic_lights(
-        &self,
-        width: impl Into<Length>,
-        cx: &mut WindowContext,
-    ) -> impl IntoElement {
+    fn render_traffic_lights(&self, cx: &mut WindowContext) -> impl IntoElement {
         h_stack()
             .id("traffic-lights")
             .group("traffic-lights")
-            .gap(px(6.))
-            .w(width.into())
+            .absolute()
+            .top(px(5.))
+            .left(px(8.))
+            .gap(px(7.))
             .justify_center()
             .border_color(gpui::white().opacity(0.1))
             .child(TrafficLight::close(cx))
@@ -506,5 +448,75 @@ impl TitleBar {
                     ),
             )
             .child(div().mt(px(3.)).text_size(px(11.)).child("Browse"))
+    }
+}
+
+impl Render for TitleBar {
+    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+        let second_row_side = px(250.);
+
+        v_stack()
+            .group("title-bar")
+            .relative()
+            .w_full()
+            .bg(vertical_linear_gradient(rgb(0xC5C5C5), rgb(0x969696)))
+            .border_b_1()
+            .border_color(rgb(0x414141))
+            // TODO: Should be able to drag the app from the whole title bar
+            .child(self.render_traffic_lights(cx))
+            .child(
+                h_stack()
+                    .id("title-bar")
+                    .h(px(20.))
+                    .flex_none()
+                    .w_full()
+                    // .child(div().child("gpuiTunes"))
+                    .justify_between(), // .child(spacer().width(traffic_lights_width)),
+            )
+            .child(
+                div()
+                    .flex()
+                    .items_start()
+                    .h(px(54.))
+                    .gap(px(10.))
+                    .child(
+                        h_stack()
+                            .flex_none()
+                            .justify_start()
+                            .w(second_row_side)
+                            .child(spacer().width(px(27.)))
+                            .child(self.render_playback_buttons(cx))
+                            .child(self.render_volume_controls()),
+                    )
+                    .child(
+                        h_stack()
+                            .flex_1()
+                            .flex_shrink_0()
+                            .w_full()
+                            .justify_center()
+                            .child(self.render_now_playing(cx)),
+                    )
+                    .child(
+                        h_stack()
+                            .flex_none()
+                            .h_full()
+                            .justify_end()
+                            .w(second_row_side)
+                            // .child(div().flex_1().child(""))
+                            .child(
+                                v_stack()
+                                    .h(px(46.))
+                                    .child(h_stack().h(px(32.)).child(self.render_search())),
+                            )
+                            .child(
+                                h_stack()
+                                    .h(px(46.))
+                                    .w(px(38.))
+                                    .justify_center()
+                                    .flex_none()
+                                    .child(self.render_browse()),
+                            ),
+                    ),
+            )
     }
 }

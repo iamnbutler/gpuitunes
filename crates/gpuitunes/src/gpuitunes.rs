@@ -27,6 +27,13 @@ fn main() {
         cx.open_window(
             WindowOptions {
                 titlebar: None,
+                window_bounds: Some(gpui::WindowBounds::Windowed(Bounds {
+                    origin: point(px(0.), px(0.)),
+                    size: Size {
+                        width: px(1018.),
+                        height: px(708.),
+                    },
+                })),
                 ..Default::default()
             },
             |cx| {

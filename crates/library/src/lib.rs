@@ -38,13 +38,13 @@ pub struct SerializableTrack {
 
 #[derive(Debug, Clone)]
 pub struct Track {
-    id: TrackId,
+    _id: TrackId,
     title: SharedString,
     artist: SharedString,
     album: SharedString,
     duration: i32,
-    kind: String,
-    date_added: String,
+    _kind: String,
+    _date_added: String,
     plays: i32,
     track_number: u32,
     total_tracks: u32,
@@ -57,13 +57,13 @@ impl From<SerializableTrack> for Track {
         let album = track.album.clone();
 
         Track {
-            id: track_id(title.clone(), artist.clone(), album.clone()),
+            _id: track_id(title.clone(), artist.clone(), album.clone()),
             title: track.title.into(),
             artist: track.artist.into(),
             album: track.album.into(),
             duration: track.duration,
-            kind: track.kind,
-            date_added: track.date_added,
+            _kind: track.kind,
+            _date_added: track.date_added,
             plays: track.plays,
             track_number: track.track_number,
             total_tracks: track.total_tracks,
@@ -196,7 +196,7 @@ pub struct Column {
     enabled: bool,
 }
 
-fn default_columns() -> Vec<Column> {
+fn _default_columns() -> Vec<Column> {
     vec![
         Column::new(ColumnKind::Playing),
         Column::new(ColumnKind::Title),
@@ -264,21 +264,21 @@ pub fn test_library_path() -> PathBuf {
 }
 
 pub struct Library {
-    source: Option<PathBuf>,
-    tracks: HashMap<TrackId, Track>,
-    track_order: Vec<TrackId>,
-    columns: Vec<Column>,
-    scanning_task: Option<Task<()>>,
+    _source: Option<PathBuf>,
+    _tracks: HashMap<TrackId, Track>,
+    _track_order: Vec<TrackId>,
+    _columns: Vec<Column>,
+    _scanning_task: Option<Task<()>>,
 }
 
 impl Default for Library {
     fn default() -> Self {
         Library {
-            source: None,
-            tracks: HashMap::new(),
-            track_order: Vec::new(),
-            columns: Vec::new(),
-            scanning_task: None,
+            _source: None,
+            _tracks: HashMap::new(),
+            _track_order: Vec::new(),
+            _columns: Vec::new(),
+            _scanning_task: None,
         }
     }
 }
@@ -288,11 +288,11 @@ impl Library {
         // check and load dir
 
         cx.new_model(|_cx| Library {
-            source: Some(path),
-            tracks: HashMap::new(),
-            track_order: Vec::new(),
-            columns: Vec::new(),
-            scanning_task: None,
+            _source: Some(path),
+            _tracks: HashMap::new(),
+            _track_order: Vec::new(),
+            _columns: Vec::new(),
+            _scanning_task: None,
         })
     }
 }

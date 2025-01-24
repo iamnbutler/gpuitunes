@@ -444,8 +444,6 @@ impl TitleBar {
 
 impl Render for TitleBar {
     fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        let second_row_side = px(250.);
-
         v_stack()
             .group("title-bar")
             .relative()

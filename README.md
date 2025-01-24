@@ -19,7 +19,7 @@ Important note: `gpui` is still currently a part of [Zed](https://github.com/zed
 
 - [ ] Add radial gradient to gpui
 - [ ] Add multi-stop gradients (see if linear_gradient can just take a vec of ColorStop?)
-- [ ] BoxShadow can't have a blur radius of 0
+- [x] BoxShadow can't have a blur radius of 0 - (Merged! - [PR](https://github.com/zed-industries/zed/pull/22441))
 - [ ] We don't seem to render divs with no children
 - [ ] No text centering makes things difficult
 - [ ] Need to be able to rotate elements to reduce amount of svgs required

@@ -284,10 +284,10 @@ impl Default for Library {
 }
 
 impl Library {
-    pub fn new(cx: &mut WindowContext, path: PathBuf) -> Model<Self> {
+    pub fn new(_window: &mut Window, cx: &mut App, path: PathBuf) -> Entity<Self> {
         // check and load dir
 
-        cx.new_model(|_cx| Library {
+        cx.new(|_cx| Library {
             source: Some(path),
             tracks: HashMap::new(),
             track_order: Vec::new(),

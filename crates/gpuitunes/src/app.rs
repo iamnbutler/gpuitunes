@@ -16,19 +16,19 @@ pub struct AppState {
 pub struct UpdateTriggered;
 
 impl AppState {
-    pub fn new(cx: &mut AppContext) -> Self {
+    pub fn new(cx: &mut App) -> Self {
         AppState {
             pending_update: None,
         }
     }
 
-    fn init_update(&mut self, cx: &mut ModelContext<Self>) {
+    fn init_update(&mut self, cx: &mut Context<Self>) {
         if self.pending_update.is_none() {
             self.pending_update = Some(self.start_updates(cx));
         }
     }
 
-    fn start_updates(&self, cx: &mut ModelContext<Self>) -> Task<()> {
+    fn start_updates(&self, cx: &mut Context<Self>) -> Task<()> {
         cx.spawn(|this, mut cx| async move {
             loop {
                 cx.background_executor().timer(UPDATE_INTERVAL).await;
@@ -44,16 +44,16 @@ impl AppState {
 impl EventEmitter<UpdateTriggered> for AppState {}
 
 pub struct Sidebar {
-    window: WeakView<AppWindow>,
-    library: Model<Library>,
-    now_playing: Model<NowPlaying>,
+    window: WeakEntity<AppWindow>,
+    library: Entity<Library>,
+    now_playing: Entity<NowPlaying>,
 }
 
 impl Sidebar {
     pub fn new(
-        window: WeakView<AppWindow>,
-        library: Model<Library>,
-        now_playing: Model<NowPlaying>,
+        window: WeakEntity<AppWindow>,
+        library: Entity<Library>,
+        now_playing: Entity<NowPlaying>,
     ) -> Self {
         Sidebar {
             window,
@@ -64,24 +64,24 @@ impl Sidebar {
 }
 
 impl Render for Sidebar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
     }
 }
 
 struct LibraryView {
-    window: WeakView<AppWindow>,
-    library: Model<Library>,
-    now_playing: Model<NowPlaying>,
+    window: WeakEntity<AppWindow>,
+    library: Entity<Library>,
+    now_playing: Entity<NowPlaying>,
     focus_handle: FocusHandle,
 }
 
 impl LibraryView {
     pub fn new(
-        window: WeakView<AppWindow>,
-        library: Model<Library>,
-        now_playing: Model<NowPlaying>,
-        cx: &mut ViewContext<Self>,
+        window: WeakEntity<AppWindow>,
+        library: Entity<Library>,
+        now_playing: Entity<NowPlaying>,
+        cx: &mut Context<Self>,
     ) -> Self {
         let focus_handle = cx.focus_handle();
 
@@ -99,43 +99,43 @@ impl LibraryView {
 }
 
 impl Render for LibraryView {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
     }
 }
 
-impl FocusableView for LibraryView {
-    fn focus_handle(&self, _cx: &AppContext) -> FocusHandle {
+impl Focusable for LibraryView {
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
         self.focus_handle.clone()
     }
 }
 
 struct StatusBar {
-    window: WeakView<AppWindow>,
-    library: Model<Library>,
+    window: WeakEntity<AppWindow>,
+    library: Entity<Library>,
 }
 
 impl StatusBar {
-    pub fn new(window: WeakView<AppWindow>, library: Model<Library>) -> Self {
+    pub fn new(window: WeakEntity<AppWindow>, library: Entity<Library>) -> Self {
         StatusBar { window, library }
     }
 }
 
 impl Render for StatusBar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
     }
 }
 
 pub struct AppWindow {
-    weak_self: WeakView<Self>,
-    sidebar: View<Sidebar>,
+    // sidebar: Entity<Sidebar>,
     // For now is just the library, but could
     // be a slot for any activated view
-    active_view: View<LibraryView>,
-    status_bar: View<StatusBar>,
-    library: Model<Library>,
-    now_playing: Model<NowPlaying>,
+    // active_view: Entity<LibraryView>,
+    // status_bar: Entity<StatusBar>,
+    // library: Entity<Library>,
+    // now_playing: Entity<NowPlaying>,
+    focus_handle: FocusHandle,
     app_state: Arc<AppState>,
     _subscriptions: Vec<Subscription>,
     // _schedule_serialize: Option<Task<()>>,
@@ -143,9 +143,10 @@ pub struct AppWindow {
 
 impl AppWindow {
     pub fn new(
-        library: Model<Library>,
+        library: Entity<Library>,
         app_state: Arc<AppState>,
-        cx: &mut ViewContext<Self>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
     ) -> Self {
         // Watch for changes to the library, update the ui when they occur
         cx.observe(&library, |_, _, cx| cx.notify()).detach();
@@ -159,39 +160,38 @@ impl AppWindow {
         // });
 
         // Ensure _something_ always has focus
-        cx.on_focus_lost(|this, cx| {
-            let focus_handle = this.focus_handle(cx);
-            cx.focus(&focus_handle);
-        })
-        .detach();
+        // cx.on_focus_lost(|this, cx| {
+        //     let focus_handle = this.focus_handle(cx);
+        //     cx.focus(&focus_handle);
+        // })
+        // .detach();
 
-        let weak_handle = cx.view().downgrade();
+        // let weak_handle = cx.entity().downgrade();
 
         let app_state = Arc::new(AppState::new(cx));
 
-        let now_playing = cx.new_model(|_| NowPlaying::default());
+        // let now_playing = cx.new(|_| NowPlaying::default());
 
-        let sidebar = cx.new_view(|_cx| {
-            Sidebar::new(weak_handle.clone(), library.clone(), now_playing.clone())
-        });
-        let library_view = cx.new_view(|cx| {
-            LibraryView::new(
-                weak_handle.clone(),
-                library.clone(),
-                now_playing.clone(),
-                cx,
-            )
-        });
-        let status_bar = cx.new_view(|_cx| StatusBar::new(weak_handle.clone(), library.clone()));
+        // let sidebar =
+        //     cx.new(|cx| Sidebar::new(weak_handle.clone(), library.clone(), now_playing.clone()));
+        // let library_view = cx.new(|cx| {
+        //     LibraryView::new(
+        //         weak_handle.clone(),
+        //         library.clone(),
+        //         now_playing.clone(),
+        //         cx,
+        //     )
+        // });
+        // let status_bar = cx.new(|cx| StatusBar::new(weak_handle.clone(), library.clone()));
 
         AppWindow {
-            weak_self: weak_handle,
-            sidebar,
-            active_view: library_view,
-            status_bar,
-            library,
-            now_playing,
+            // sidebar,
+            // active_view: library_view,
+            // status_bar,
+            // library,
+            // now_playing,
             app_state,
+            focus_handle: cx.focus_handle(),
             _subscriptions: Vec::new(),
         }
     }
@@ -202,25 +202,25 @@ impl AppWindow {
         &self.app_state
     }
 
-    pub fn library(&self) -> &Model<Library> {
-        &self.library
-    }
+    // pub fn library(&self) -> &Entity<Library> {
+    //     &self.library
+    // }
 }
 
-impl FocusableView for AppWindow {
-    fn focus_handle(&self, cx: &AppContext) -> FocusHandle {
-        self.active_view.focus_handle(cx)
+impl Focusable for AppWindow {
+    fn focus_handle(&self, _cx: &App) -> FocusHandle {
+        self.focus_handle.clone()
     }
 }
 
 impl Render for AppWindow {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // This should be more like 4.0, but later macOS versions have
         // a higher default window border radius
         let window_rounding = px(10.0);
-        let state = cx.new_model(|cx| AppState::new(cx));
+        let state = cx.new(|cx| AppState::new(cx));
 
-        let title_bar = cx.new_view(|cx| TitleBar::new(state.clone(), cx));
+        let title_bar = cx.new(|cx| TitleBar::new(state.clone(), window, cx));
 
         div()
             .id("gpuitunes-window")

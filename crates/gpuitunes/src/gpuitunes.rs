@@ -15,7 +15,7 @@ mod title_bar;
 actions!(gpuitunes, [Quit, Minimize, FullScreen]);
 
 fn main() {
-    App::new().with_assets(Assets).run(|cx: &mut AppContext| {
+    Application::new().with_assets(Assets).run(|cx: &mut App| {
         cx.activate(true);
         cx.on_action(|_: &Quit, cx| cx.quit());
         cx.bind_keys([KeyBinding::new("cmd-q", Quit, None)]);
@@ -36,14 +36,14 @@ fn main() {
                 })),
                 ..Default::default()
             },
-            |cx| {
+            |window, cx| {
                 let state = Arc::new(AppState::new(cx));
 
                 let library = Library::default();
 
-                let library = cx.new_model(|_| library);
+                let library = cx.new(|_| library);
 
-                cx.new_view(|cx| AppWindow::new(library, state.clone(), cx))
+                cx.new(|cx| AppWindow::new(library, state.clone(), window, cx))
             },
         )
         .unwrap();

@@ -46,13 +46,13 @@ impl AppState {
         self.current_track.clone()
     }
 
-    pub fn current_time(&self, cx: &mut ModelContext<Self>) -> Option<PlaybackTime> {
+    pub fn current_time(&self, cx: &mut Context<Self>) -> Option<PlaybackTime> {
         let current_time = self.current_track.as_ref().map(|t| t.current_time());
         cx.notify();
         current_time
     }
 
-    pub fn time_remaining(&self, cx: &mut ModelContext<Self>) -> Option<PlaybackTime> {
+    pub fn time_remaining(&self, cx: &mut Context<Self>) -> Option<PlaybackTime> {
         let time_remaining = self.current_track.as_ref().map(|t| {
             let time = t.track().duration.0 - t.current_time().0;
             time.into()
@@ -61,7 +61,7 @@ impl AppState {
         time_remaining
     }
 
-    pub fn play_track(&mut self, track: Track, cx: &mut ModelContext<Self>) {
+    pub fn play_track(&mut self, track: Track, cx: &mut Context<Self>) {
         let mut current_track = CurrentTrack::new(track);
         current_track.set_playing(true);
         self.set_current_track(Some(current_track));
@@ -73,21 +73,21 @@ impl AppState {
         self.current_track = track;
     }
 
-    pub fn pause_playback(&mut self, cx: &mut ModelContext<Self>) {
+    pub fn pause_playback(&mut self, cx: &mut Context<Self>) {
         if let Some(current_track) = &mut self.current_track {
             current_track.is_playing = false;
         }
         cx.notify();
     }
 
-    fn start_update_timer(&mut self, cx: &mut ModelContext<Self>) {
+    fn start_update_timer(&mut self, cx: &mut Context<Self>) {
         if self.pending_update.is_none() {
             self.pending_update = Some(self.update_timer(cx));
         }
         cx.notify();
     }
 
-    fn update_timer(&self, cx: &mut ModelContext<Self>) -> Task<()> {
+    fn update_timer(&self, cx: &mut Context<Self>) -> Task<()> {
         cx.spawn(|this, mut cx| async move {
             loop {
                 cx.background_executor().timer(POLL_INTERVAL).await;
@@ -101,7 +101,7 @@ impl AppState {
         })
     }
 
-    fn update_playback(&mut self, cx: &mut ModelContext<Self>) {
+    fn update_playback(&mut self, cx: &mut Context<Self>) {
         if let Some(current_track) = &mut self.current_track {
             if current_track.is_playing {
                 let new_time = PlaybackTime(current_track.current_time().0 + 1);

@@ -54,7 +54,7 @@ impl Spacer {
 }
 
 impl RenderOnce for Spacer {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let width = self.width.unwrap_or(Length::Auto);
         let height = self.height.unwrap_or(Length::Auto);
 

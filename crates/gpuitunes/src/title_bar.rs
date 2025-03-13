@@ -48,25 +48,25 @@ struct TrafficLight {
 }
 
 impl TrafficLight {
-    fn new(button_type: WindowButtonType, _cx: &mut WindowContext) -> Self {
+    fn new(button_type: WindowButtonType, _window: &mut Window, cx: &mut App) -> Self {
         TrafficLight { button_type }
     }
 
-    fn close(cx: &mut WindowContext) -> Self {
-        TrafficLight::new(WindowButtonType::Close, cx)
+    fn close(window: &mut Window, cx: &mut App) -> Self {
+        TrafficLight::new(WindowButtonType::Close, window, cx)
     }
 
-    fn minimize(cx: &mut WindowContext) -> Self {
-        TrafficLight::new(WindowButtonType::Minimize, cx)
+    fn minimize(window: &mut Window, cx: &mut App) -> Self {
+        TrafficLight::new(WindowButtonType::Minimize, window, cx)
     }
 
-    fn fullscreen(cx: &mut WindowContext) -> Self {
-        TrafficLight::new(WindowButtonType::FullScreen, cx)
+    fn fullscreen(window: &mut Window, cx: &mut App) -> Self {
+        TrafficLight::new(WindowButtonType::FullScreen, window, cx)
     }
 }
 
 impl RenderOnce for TrafficLight {
-    fn render(self, _cx: &mut WindowContext) -> impl IntoElement {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         let button_type = self.button_type;
 
         circle(px(14.))
@@ -76,10 +76,10 @@ impl RenderOnce for TrafficLight {
             .p_px()
             .bg(vertical_linear_gradient(rgb(0x101010), rgb(0x95999C)))
             .shadow(highlight_ring_shadow())
-            .on_click(move |_, cx| match button_type {
-                WindowButtonType::Close => cx.dispatch_action(Box::new(Quit)),
-                WindowButtonType::Minimize => cx.dispatch_action(Box::new(Minimize)),
-                WindowButtonType::FullScreen => cx.dispatch_action(Box::new(FullScreen)),
+            .on_click(move |_, _, cx| match button_type {
+                WindowButtonType::Close => cx.dispatch_action(&Quit),
+                WindowButtonType::Minimize => cx.dispatch_action(&Minimize),
+                WindowButtonType::FullScreen => cx.dispatch_action(&FullScreen),
             })
             .child(
                 circle(px(12.))
@@ -103,11 +103,11 @@ impl RenderOnce for TrafficLight {
 }
 
 pub struct TitleBar {
-    state: Model<AppState>,
+    state: Entity<AppState>,
 }
 
 impl TitleBar {
-    pub fn new(state: Model<AppState>, _cx: &mut ViewContext<Self>) -> Self {
+    pub fn new(state: Entity<AppState>, _window: &mut Window, _cx: &mut Context<Self>) -> Self {
         // cx.subscribe(
         //     &state,
         //     |_this, _model, _event: &CurrentTimeChangedEvent, cx| {
@@ -123,7 +123,7 @@ impl TitleBar {
 }
 
 impl TitleBar {
-    fn render_traffic_lights(&self, cx: &mut WindowContext) -> impl IntoElement {
+    fn render_traffic_lights(&self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         h_stack()
             .id("traffic-lights")
             .group("traffic-lights")
@@ -133,16 +133,16 @@ impl TitleBar {
             .gap(px(7.))
             .justify_center()
             .border_color(gpui::white().opacity(0.1))
-            .child(TrafficLight::close(cx))
-            .child(TrafficLight::minimize(cx))
-            .child(TrafficLight::fullscreen(cx))
+            .child(TrafficLight::close(window, cx))
+            .child(TrafficLight::minimize(window, cx))
+            .child(TrafficLight::fullscreen(window, cx))
     }
 
     fn render_playback_button(
         &self,
         size: impl Into<Pixels>,
         icon: Icon,
-        cx: &mut ViewContext<Self>,
+        cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let size = size.into();
 
@@ -170,13 +170,13 @@ impl TitleBar {
                     })),
             )
             .active(|this| this.opacity(0.8))
-            .on_click(cx.listener(move |_, event, cx| {
+            .on_click(cx.listener(move |_, event, _, cx| {
                 println!("{:?}", event);
                 cx.notify();
             }))
     }
 
-    fn render_playback_buttons(&self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render_playback_buttons(&self, cx: &mut Context<Self>) -> impl IntoElement {
         h_stack()
             .top(px(5.))
             .gap(px(4.))
@@ -227,7 +227,7 @@ impl TitleBar {
             .child(small_icon(Icon::VolumeHigh))
     }
 
-    fn render_now_playing(&self, _cx: &ViewContext<Self>) -> impl IntoElement {
+    fn render_now_playing(&self, _window: &mut Window, _cx: &Context<Self>) -> impl IntoElement {
         // let current_track = self.state.read(cx).current_track();
 
         // let width: f32 = 350.;
@@ -443,7 +443,7 @@ impl TitleBar {
 }
 
 impl Render for TitleBar {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let second_row_side = px(250.);
 
         v_stack()
@@ -454,7 +454,7 @@ impl Render for TitleBar {
             .border_b_1()
             .border_color(rgb(0x414141))
             // TODO: Should be able to drag the app from the whole title bar
-            .child(self.render_traffic_lights(cx))
+            .child(self.render_traffic_lights(window, cx))
             .child(
                 h_stack()
                     .id("title-bar")
@@ -497,7 +497,7 @@ impl Render for TitleBar {
                             .flex_shrink_0()
                             .w_full()
                             .justify_center()
-                            .child(self.render_now_playing(cx)),
+                            .child(self.render_now_playing(window, cx)),
                     )
                     .child(
                         h_stack()
